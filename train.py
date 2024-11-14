@@ -15,7 +15,8 @@ def set_seed(seed):
     """
     Sets random seed
     
-    :param seed: random seed to set
+    Args:
+        seed: random seed to set
     """
     random.seed(seed)
     np.random.seed(seed)
@@ -27,7 +28,8 @@ def make_output_dirs(save_dir):
     """
     Creates sub-directories under save_dir where model outputs and evaluation metrics will be saved to.
     
-    param saved_dir: parent directory under which sub-directories are saved
+    Args:
+        save_dir: parent directory under which sub-directories are saved
     """
     metrics_dir_val = save_dir / "metrics/val"
     metrics_dir_test = save_dir / "metrics/test"
@@ -43,10 +45,14 @@ def load_dataloader(dataset_name, batch_size, val_batch_size, split = 'simulatio
     """
     Loads data in a PertData format. Uses GEARS dataloaders implementation as described under https://github.com/snap-stanford/GEARS
     
-    :param dataset_name: name of the dataset to load. Example: 'adamson', 'norman'.
-    :param batch_size: batch_size for the train datalaoder
-    :param val_batch_size: batch_size for the validation dataloader
-    :param split: split to use; tested with 'simulation'
+    Args:
+        dataset_name: name of the dataset to load. Example: 'adamson', 'norman'.
+        batch_size: batch_size for the train datalaoder
+        val_batch_size: batch_size for the validation dataloader
+        split: split to use; tested with 'simulation'
+        
+    Returns:
+        pert_data: PertData object
     """
     pert_data = PertData("data/")
     pert_data.load(data_name=dataset_name)
@@ -58,23 +64,101 @@ def load_dataloader(dataset_name, batch_size, val_batch_size, split = 'simulatio
 def get_args():
     """
     Parses command line arguments
+    
+    Returns:
+        list of args
     """
     parser = argparse.ArgumentParser(description='Arguments for training ...')
-    parser.add_argument('--num-epochs', type=int, help='number of epochs to train the model for', default = 1)
-    parser.add_argument('--model-type', type=str, help='Type of model to train. One of: [scgpt, scgenept_ncbi_gpt, scgenept_ncbi+uniprot_gpt, scgptgo_c_gpt_concat, scgptgo_f_gpt_concat, scgptgo_p_gpt_concat, scgptgo_all_gpt_concat, genept_ncbi_gpt, genept_ncbi+uniprot_gpt, go_c_gpt_concat, go_f_gpt_concat, go_p_gpt_concat, go_all_gpt_concat ...]. For full list of possible models, please visit https://github.com/czi-ai/scGenePT.', default = "scgenept_ncbi_gpt")
-    parser.add_argument('--batch-size', type=int, help='train batch_size', default = 64)
-    parser.add_argument('--eval-batch-size', type=int, help='val batch_size', default = 64)
-    parser.add_argument('--device', type=str, help='device', default = 'cuda:0')
-    parser.add_argument('--dataset', type=str, help='dataset to train on; ', default = 'norman')
-    parser.add_argument('--rnd-seed', type=int, help='random seed', default = 42)
-    parser.add_argument('--max-seq-len', type=int, help='Number of genes to sample during training', default = 1536)
-    parser.add_argument('--dropout', type=float, help='dropout value', default = 0.2)
-    parser.add_argument('--lr', type=float, help='learning rate', default = 1e-4)
-    parser.add_argument('--schedule-interval-lr', type=int, help='schedule interval for lr', default = 1)
-    parser.add_argument('--early-stop', type=int, help='number of epochs to stop early if loss does not decrease', default = 10)
-    parser.add_argument('--log-interval', type=int, help='number of interval for which to log', default = 100)
-    parser.add_argument('--pretrained-model-dir', type=str, help='directory of pretrained models are in', default = 'models/pretrained/')
-    parser.add_argument('--outputs_dir', type=str, help='directory where model outputs and metrics are saved', default = 'outputs/')
+    parser.add_argument(
+        '--num-epochs', 
+        type=int, 
+        help='number of epochs to train the model for', 
+        default = 1
+    )
+    parser.add_argument(
+        '--model-type', 
+        type=str, 
+        help='Type of model to train. One of: [scgpt, scgenept_ncbi_gpt, scgenept_ncbi+uniprot_gpt, scgptgo_c_gpt_concat, scgptgo_f_gpt_concat, scgptgo_p_gpt_concat, scgptgo_all_gpt_concat, genept_ncbi_gpt, genept_ncbi+uniprot_gpt, go_c_gpt_concat, go_f_gpt_concat, go_p_gpt_concat, go_all_gpt_concat ...]. For full list of possible models, please visit https://github.com/czi-ai/scGenePT.', 
+        default = "scgenept_ncbi_gpt"
+    )
+    parser.add_argument(
+        '--batch-size', 
+        type=int, 
+        help='train batch_size',
+        default = 64
+    )
+    parser.add_argument(
+        '--eval-batch-size', 
+        type=int, 
+        help='val batch_size', 
+        default = 64
+    )
+    parser.add_argument(
+        '--device', 
+        type=str, 
+        help='device', 
+        default = 'cuda:0'
+    )
+    parser.add_argument(
+        '--dataset', 
+        type=str, 
+        help='dataset to train on; ', 
+        default = 'norman'
+    )
+    parser.add_argument(
+        '--rnd-seed', 
+        type=int, 
+        help='random seed', 
+        default = 42
+    )
+    parser.add_argument(
+        '--max-seq-len', 
+        type=int, 
+        help='Number of genes to sample during training', 
+        default = 1536
+    )
+    parser.add_argument(
+        '--dropout', 
+        type=float, 
+        help='dropout value', 
+        default = 0.2
+    )
+    parser.add_argument(
+        '--lr', 
+        type=float, 
+        help='learning rate', 
+        default = 1e-4
+    )
+    parser.add_argument(
+        '--schedule-interval-lr', 
+        type=int, 
+        help='schedule interval for lr', 
+        default = 1
+    )
+    parser.add_argument(
+        '--early-stop', 
+        type=int, 
+        help='number of epochs to stop early if loss does not decrease', 
+        default = 10
+    )
+    parser.add_argument(
+        '--log-interval', 
+        type=int, 
+        help='number of interval for which to log', 
+        default = 100
+    )
+    parser.add_argument(
+        '--pretrained-model-dir', 
+        type=str, 
+        help='directory of pretrained models are in', 
+        default = 'models/pretrained/'
+    )
+    parser.add_argument(
+        '--outputs_dir', 
+        type=str, 
+        help='directory where model outputs and metrics are saved', 
+        default = 'outputs/'
+    )
     args = parser.parse_args()
     return args
 
@@ -119,17 +203,17 @@ if __name__ == "__main__":
     ntokens = len(vocab)  # size of vocabulary
     
     # Get GenePT embeddings to include
-    genept_embeds, genept_emb_type, genept_embed_dim, found_genes_genept = initialize_genept_embeddings(embs_to_include, dataset_genes, vocab, args.model_type, args.pretrained_model_dir)
+    genept_embs, genept_emb_type, genept_emb_dim, found_genes_genept = initialize_genept_embeddings(embs_to_include, dataset_genes, vocab, args.model_type, args.pretrained_model_dir)
     
     # Get GO embeddings to include
-    go_embs_to_include, go_emb_size, found_genes_go = initialize_go_embeddings(embs_to_include, dataset_genes, vocab, args.model_type, args.pretrained_model_dir)
+    go_embs_to_include, go_emb_type, go_emb_dim, found_genes_go = initialize_go_embeddings(embs_to_include, dataset_genes, vocab, args.model_type, args.pretrained_model_dir)
     
     model = scGenePT(
-        ntokens,
-        EMBSIZE,
-        NHEAD,
-        D_HID,
-        NLAYERS,
+        ntoken=tokens,
+        d_model=EMBSIZE,
+        nhead=NHEAD,
+        d_hid=D_HID,
+        nlayers=NLAYERS,
         nlayers_cls=N_LAYERS_CLS,
         n_cls=N_CLS,
         vocab=vocab,
@@ -140,11 +224,12 @@ if __name__ == "__main__":
         pert_pad_id=PERT_PAD_ID,
         use_fast_transformer=use_fast_transformer,
         embs_to_include = embs_to_include,
-        lookup_embed = genept_embeds, 
+        genept_embs = genept_embs, 
         genept_embed_type = genept_emb_type, 
-        genept_emb_size = genept_embed_dim,
+        genept_emb_dim = genept_emb_dim,
         go_embs_to_include = go_embs_to_include,
-        go_emb_size = go_emb_size
+        go_emb_type = go_emb_type,
+        go_emb_dim = go_emb_dim
     )
     
     # If we don't to include learned attention, it needs to be taken out of the weights that are being initialize

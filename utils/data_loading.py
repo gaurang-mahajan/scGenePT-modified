@@ -24,8 +24,11 @@ def get_embs_to_include(args):
     """
     Processes and returns a list containing the types of embeddings to include for gene representation based on model_type
     
-    :param: command line args, containing model-type
-    :returns list containing types of embeddings to include for gene representations
+    Args:
+        args: command line args, containing model-type
+        
+    Returns:
+        embs_to_include: list containing types of embeddings to include for gene representations
     """
     # GenePT Gene embeddings - either NCBI gene summaries or NCBI gene + UniProt protein summaries computed with GPT-3.5
     if args.model_type in ['genept_ncbi_gpt', 
@@ -98,17 +101,24 @@ def get_embs_to_include(args):
     return embs_to_include
 
 
-def match_genes_to_scgpt_vocab(pretrained_model_location, pert_data, logger, special_tokens, dataset_name):
+def match_genes_to_scgpt_vocab(pretrained_model_location, pert_data, logger, special_tokens, dataset):
     """
     Parses a pre-trained scGPT model vocab and matches genes in a given pert_data corresponding to dataloaders from
-    a dataset_name
-    Code copied and modified from: https://scgpt.readthedocs.io/en/latest/tutorial_perturbation.html
+    a dataset
+    Code initially retrieved and modified from: https://scgpt.readthedocs.io/en/latest/tutorial_perturbation.html
     
-    :param pretrained_model_location: location of scGPT pretrained model
-    :param pert_data: PertData file containing training data
-    :param logger: scGPT logger
-    :param special_tokens: special tokens to add to the scGPT gene vocabulary; usually ["<pad", "<cls>", "<eoc>"]
-    :param dataset_name: name of the dataset the pert_data object belongs to; likely one of ["norman", "adamson"]
+    Args:
+        pretrained_model_location: location of scGPT pretrained model
+        pert_data: PertData file containing training data
+        logger: scGPT logger
+        special_tokens: special tokens to add to the scGPT gene vocabulary; usually ["<pad", "<cls>", "<eoc>"]
+    
+    Returns:
+        vocab: scGPT vocab
+        dataset_gene_ids: vocab indices of genes in dataset
+        dataset_genes: gene names present in dataset
+        gene2idx: mapping from gene name to gene idx in vocab for genes in dataset
+        
     """
     model_dir = Path(pretrained_model_location)
     model_config_file = model_dir / "args.json"
@@ -154,40 +164,52 @@ def create_embs_w(genes, vocab, precomputed_embs_location, embed_dim, init_value
     Creates an embedding matrix for a given list of genes, where each gene gets an embedding either from precomputed
     embeddings located at embedding_location, or by randomly initializing a vector with init_value.
     
-    :param genes: genes to compute the embedding matrix for
-    :param vocab: vocab mapping gene2index; needed to map correctly to the scGPT model architecture
-    :param precomputed_embeddings_location: location of precomputed embeddings
-    :param embed_dim: dimension of the precomputed embeddings, and consequently created embedding matrix 
+    Args:
+        genes: genes to compute the embedding matrix for
+        vocab: vocab mapping gene2index; needed to map correctly to the scGPT model architecture
+        precomputed_embeddings_location: location of precomputed embeddings
+        embed_dim: dimension of the precomputed embeddings, and consequently created embedding matrix 
+        
+    Returns:
+        embeds_m: embedding matrix created for the list of genes
+        mapped_genes: list of mapped genes
     """
     with open(precomputed_embs_location, "rb") as fp:
         gene_embeddings = pkl.load(fp)
             
     embeds_m = np.random.uniform(-init_value, init_value, (len(vocab), embed_dim))
-    found_genes = []
-    found_genes_embeds_m = []
+    mapped_genes = []
+    mapped_genes_embeds_m = []
     count_missing = 0
     for i, gene in enumerate(genes):
         if gene in gene_embeddings:
             embed = gene_embeddings[gene]
-            found_genes_embeds_m.append(embed)
-            found_genes.append(gene)
+            mapped_genes_embeds_m.append(embed)
+            mapped_genes.append(gene)
         else:
             count_missing+=1
             
     print(f"Matched {len(genes) - count_missing} out of {len(genes)} genes in the GenePT-w embedding")
-    gene_indices = vocab.lookup_indices(found_genes)
-    embeds_m[gene_indices] = found_genes_embeds_m
-    return embeds_m, found_genes
+    gene_indices = vocab.lookup_indices(mapped_genes)
+    embeds_m[gene_indices] = mapped_genes_embeds_m
+    return embeds_m, mapped_genes
 
 def initialize_genept_embeddings(embs_to_include, genes, vocab, model_type, pretrained_model_dir):
     """
     Initializes genept embeddings for a given set of genes, given that genePT embs should be included in the 
     list of gene representations.
     
-    :param embs_to_include: list containing types of embeddings to include for gene representations
-    :param genes: set of genes to map to genePT embeddings
-    :param vocab: scGPT vocabulary
-    :param model_type: model-type; determines the embeddings that get initialized
+    Args:
+        embs_to_include: list containing types of embeddings to include for gene representations
+        genes: set of genes to map to genePT embeddings
+        vocab: scGPT vocabulary
+        model_type: model-type; determines the embeddings that get initialized
+        
+    Returns:
+        embeds: created embeddings
+        emb_info_type: one of 'ncbi', 'ncbi+uniprot'
+        embed_dim: dimension of embedding
+        mapped_genes: list of mapped genes
     """
     if 'genePT_token_embs_gpt' in embs_to_include or 'genePT_token_embs_llama' in embs_to_include:
         emb_info_type = model_type.split('_')[1] #'ncbi' or 'ncbi+uniprot'
@@ -202,25 +224,30 @@ def initialize_genept_embeddings(embs_to_include, genes, vocab, model_type, pret
                 
         embed_dim = GPT_ADA_002_EMBED_DIM
         embeddings_location = pretrained_model_dir + GENE_EMBED_TYPE2LOCATION[emb_model_type]
-        embeds, found_genes = create_embs_w(genes, vocab, embeddings_location, embed_dim)       
+        embeds, mapped_genes = create_embs_w(genes, vocab, embeddings_location, embed_dim)       
     else:
         embeds = []
         emb_info_type = None
         embed_dim = None
         found_genes = []
-    return embeds, emb_info_type, embed_dim, found_genes
-
+    return embeds, emb_info_type, embed_dim, mapped_genes
 
 
 def initialize_go_embeddings(embs_to_include, genes, vocab, model_type, pretrained_model_dir):
     """
-    Initializes GO (Gene Ontology) Annotations embeddings for a given set of genes, given that GO embs should be included in the 
-    list of gene representations.
+    Initializes GO (Gene Ontology) Annotations embeddings for a given set of genes, given that GO embs should be included in the list of gene representations.
     
-    :param embs_to_include: list containing types of embeddings to include for gene representations
-    :param genes: set of genes to map to genePT embeddings
-    :param vocab: scGPT vocabulary
-    :param model_type: model-type; determines the embeddings that get initialized
+    Args:
+        embs_to_include: list containing types of embeddings to include for gene representations
+        genes: set of genes to map to genePT embeddings
+        vocab: scGPT vocabulary
+        model_type: model-type; determines the embeddings that get initialized
+    
+    Returns:
+        embeds: created embeddings
+        emb_info_type: one of 'ncbi', 'ncbi+uniprot'
+        embed_dim: dimension of embedding
+        mapped_genes: list of mapped genes
     """     
     go_embs_to_include = {}
     found_genes_go = []
@@ -236,25 +263,29 @@ def initialize_go_embeddings(embs_to_include, genes, vocab, model_type, pretrain
         
         embed_dim = GPT_ADA_002_EMBED_DIM
         embeddings_location = pretrained_model_dir + GENE_EMBED_TYPE2LOCATION[emb_model_type]
-        embeds, found_genes = create_embs_w(genes, vocab, embeddings_location, embed_dim)
+        embeds, mapped_genes = create_embs_w(genes, vocab, embeddings_location, embed_dim)
         go_embs_to_include[go_emb_type] = embeds
             
     else:
         go_embs_to_include = {}
         embed_dim = None
         found_genes = []
-    return go_embs_to_include, embed_dim, found_genes
+    return go_embs_to_include, go_emb_type, embed_dim, mapped_genes
 
 def load_pretrained_model(model, load_param_prefixs, verbose, model_file, device):
     """
     Loads the load_param_prefixs parameters from a pretrained model located in model_file into a given model instance. 
     Calls the scGPT load_pretrained function.
     
-    :param model: model instance to load
-    :param load_param_prefixs: list of parameter prefixes to load
-    :param verbose: True if verbose
-    :param mdoel_file: location of trained model
-    :param device: device to load the model on
+    Args:
+        model: model instance to load
+        load_param_prefixs: list of parameter prefixes to load
+        verbose: True if verbose
+        model_file: location of trained model
+        device: device to load the model on
+        
+    Returns:
+        model with load_param_prefixs initialized
     """
     model = load_pretrained(model, torch.load(model_file, map_location=device), verbose=verbose, prefix=load_param_prefixs)
     return model
