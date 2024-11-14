@@ -1,5 +1,5 @@
 from utils.data_loading import *
-from utils.evaluation import *
+# from utils.evaluation import *
 from utils.scgpt_config import *
 
 from models.scGenePT import *
@@ -115,14 +115,14 @@ if __name__ == "__main__":
     embs_to_include = get_embs_to_include(args)
     
     # Get gene vocab and IDs
-    vocab, gene_ids, genes, num_extra_genes, gene2idx = get_pretrained_model_args(scgpt_pretrained_model_location, pert_data, logger, SPECIAL_TOKENS, dataset_name)
+    vocab, gene_ids, dataset_genes, gene2idx = match_genes_to_scgpt_vocab(scgpt_pretrained_model_location, pert_data, logger, SPECIAL_TOKENS, dataset_name)
     ntokens = len(vocab)  # size of vocabulary
     
     # Get GenePT embeddings to include
-    genept_embeds, genept_emb_type, genept_embed_dim, found_genes_genept = get_genept_embeddings(embs_to_include, genes, vocab, args)
+    genept_embeds, genept_emb_type, genept_embed_dim, found_genes_genept = initialize_genept_embeddings(embs_to_include, dataset_genes, vocab, args.model_type, args.pretrained_model_dir)
     
     # Get GO embeddings to include
-    go_embs_to_include, go_emb_size, found_genes_go = get_go_embeddings(embs_to_include, args)
+    go_embs_to_include, go_emb_size, found_genes_go = initialize_go_embeddings(embs_to_include, dataset_genes, vocab, args.model_type, args.pretrained_model_dir)
     
     model = scGenePT(
         ntokens,
@@ -155,7 +155,7 @@ if __name__ == "__main__":
         ] 
         
     # Load weights from pretrained_model
-    model = load_pretrained_model(model, load_param_prefixs, False, Path(scgpt_pretrained_model_location) / "best_model.pt", logger, device)  
+    model = load_pretrained_model(model, load_param_prefixs, False, Path(scgpt_pretrained_model_location) / "best_model.pt", device)  
     model.to(device)
     
     # Lr functions
@@ -165,7 +165,7 @@ if __name__ == "__main__":
     scaler = torch.cuda.amp.GradScaler(enabled=amp)
     
     # Train model
-    best_model = train_model(model, pert_data, args.num_epochs, loss_fn, optimizer, scheduler, scaler, device, gene_ids, logger, INCLUDE_ZERO_GENE, amp, dataset_name, args.model_type, args.rnd_seed, args.max_seq_len, args.log_interval, num_extra_genes, gene2idx, True, save_dir)
+    best_model = train_model(model, pert_data, args.num_epochs, loss_fn, optimizer, scheduler, scaler, device, gene_ids, logger, INCLUDE_ZERO_GENE, amp, dataset_name, args.model_type, args.rnd_seed, args.max_seq_len, args.log_interval, gene2idx, True, save_dir)
     
     # Save best model under model output directory
     print(f"Saving best model under {save_dir}/models/best_model.pt")
