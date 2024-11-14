@@ -65,6 +65,22 @@ argument | definition | default value
 **pretrained-model-dir** | directory of where the saved pretrained model directories are in | models/pretrained/
 **outputs-dir** | directory where model outputs and metrics are saved | outputs/ 
 
+## Cite Us
+If you use scGenePT in your analyses, please cite us:
+
+**Paper**: Istrate, Ana-Maria, Donghui Li, and Theofanis Karaletsos. "scGenePT: Is language all you need for modeling single-cell perturbations?." bioRxiv (2024): 2024-10. [bioRxiv Link](https://www.biorxiv.org/content/10.1101/2024.10.23.619972v1)
+
+```
+@article{istrate2024scgenept,
+  title={scGenePT: Is language all you need for modeling single-cell perturbations?},
+  author={Istrate, Ana-Maria and Li, Donghui and Karaletsos, Theofanis},
+  journal={bioRxiv},
+  pages={2024--10},
+  year={2024},
+  publisher={Cold Spring Harbor Laboratory}
+}
+```
+
 ## References
 1. Cui, Haotian, et al. "scGPT: toward building a foundation model for single-cell multi-omics using generative AI." Nature Methods (2024): 1-11. [Paper Link](https://www.nature.com/articles/s41592-024-02201-0) | [GitHub Repo](https://github.com/bowang-lab/scGPT) 
 2. Chen, Yiqun, and James Zou. "GenePT: a simple but effective foundation model for genes and cells built from ChatGPT." bioRxiv (2024): 2023-10. [Paper Link](https://pmc.ncbi.nlm.nih.gov/articles/PMC10614824/) |  [GitHub Repo](https://github.com/yiqunchen/GenePT) 
