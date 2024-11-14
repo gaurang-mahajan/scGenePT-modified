@@ -269,7 +269,8 @@ def initialize_go_embeddings(embs_to_include, genes, vocab, model_type, pretrain
     else:
         go_embs_to_include = {}
         embed_dim = None
-        found_genes = []
+        mapped_genes = []
+        go_emb_type = None
     return go_embs_to_include, go_emb_type, embed_dim, mapped_genes
 
 def load_pretrained_model(model, load_param_prefixs, verbose, model_file, device):

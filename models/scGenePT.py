@@ -1,7 +1,12 @@
+# Model Class is based on, modifies and augments the TransformerGenerator model class 
+# from https://github.com/bowang-lab/scGPT/blob/main/scgpt/model/generation_model.py, 
+# retrieved in July 2024.
+
 import gc
 import pickle as pkl
 import matplotlib.pyplot as plt
 import plotly.express as px
+from utils.scgpt_config import *
 
 import json
 import os
@@ -60,10 +65,8 @@ from scgpt.model import (
 matplotlib.rcParams["savefig.transparent"] = False
 warnings.filterwarnings("ignore")
 
-set_seed(42)
 
-# code retrieved July 08, 2024 from https://czi-ie-meta-prod-east-databricks-workspace.cloud.databricks.com/?o=1826199555946458#notebook/3977793979534441/command/3977793979534454
-class TransformerGenerator(nn.Module):
+class scGenePT(nn.Module):
     def __init__(
         self,
         ntoken: int,
@@ -74,6 +77,7 @@ class TransformerGenerator(nn.Module):
         nlayers_cls: int,
         n_cls: int,
         vocab: Any,
+        n_perturbagens: int,
         dropout: float = 0.5,
         pad_token: str = "<pad>",
         pad_value: int = 0,
@@ -91,9 +95,13 @@ class TransformerGenerator(nn.Module):
         fast_transformer_backend: str = "flash",
         pre_norm: bool = False,
         embs_to_include = ['scGPT_counts_embs', 'scGPT_token_embs', 'genePT_token_embs'],
-        lookup_embed = None,
-        use_drug_embeds = False,
-        drug_embeds = None
+        genept_embs = None,
+        genept_emb_type = None, 
+        genept_emb_size = 1536,
+        go_embs_to_include = None,
+        go_emb_type = None,
+        go_emb_size = 1536,
+        proj_layer = None
     ):
         super().__init__()
         self.model_type = "Transformer"
@@ -107,6 +115,10 @@ class TransformerGenerator(nn.Module):
         self.cell_emb_style = cell_emb_style
         self.explicit_zero_prob = explicit_zero_prob
         self.norm_scheme = "pre" if pre_norm else "post"
+        self.embs_to_include = embs_to_include
+        self.go_embs_to_include = go_embs_to_include
+        self.go_emb_type = go_emb_type
+        
         if cell_emb_style not in ["cls", "avg-pool", "w-pool"]:
             raise ValueError(f"Unknown cell_emb_style: {cell_emb_style}")
         if use_fast_transformer:
@@ -122,20 +134,29 @@ class TransformerGenerator(nn.Module):
                 )
                 use_fast_transformer = False
         self.use_fast_transformer = use_fast_transformer
+        
+        print(f'Using the following embeddings:{self.embs_to_include}')
 
+        # scGPT gene token encoder
         if 'scGPT_token_embs' in self.embs_to_include:
             self.encoder = GeneEncoder(ntoken, d_model, padding_idx=vocab[pad_token])
-        if 'genePT_token_embs' in self.embs_to_include:
-            self.genept_encoder = GenePTEncoder(ntoken, d_model, padding_idx=vocab[pad_token], genept_lookup_embed=lookup_embed)
+            
+        # scGPT counts encoder
         if 'scGPT_counts_embs' in self.embs_to_include:
             self.value_encoder = ContinuousValueEncoder(d_model, dropout)
-        if use_drug_embeds:
-            self.pert_encoder = PertEncoder(torch.from_numpy(drug_embeds), 1536, d_model, pert_pad_id) 
-        else:
-            self.pert_encoder = nn.Embedding(n_perturbagens + 1, d_model, padding_idx=pert_pad_id)
+            
+        # genePT gene token encoder
+        if 'genePT_token_embs_gpt' in self.embs_to_include:
+            self.genept_encoder = GenePTEncoder(ntoken, d_model, padding_idx=vocab[pad_token], genept_lookup_embed=genept_embs, 
+                                                genept_embs_size=genept_emb_size, proj_layer = proj_layer)
+        # GO Annotations gene token encoder
+        if 'GO_token_embs_gpt_concat' in self.embs_to_include or 'GO_token_embs_gpt_avg' in self.embs_to_include:
+            self.go_encoder = GOPTEncoder(ntoken, d_model, padding_idx=vocab[pad_token], 
+                                          gopt_lookup_embed=go_embs_to_include[go_embed_type], gopt_embs_size=go_emb_size)
+        # Perturbation flags encoder 
+        self.pert_encoder = nn.Embedding(n_perturbagens + 1, d_model, padding_idx=pert_pad_id)
 
-        # print("Using simple batchnorm instead of domain specific batchnorm")
-        # self.bn = nn.BatchNorm1d(d_model, eps=6.1e-5)
+        self.ln = nn.LayerNorm(d_model)
 
         if use_fast_transformer:
             if fast_transformer_backend == "linear":
@@ -158,13 +179,12 @@ class TransformerGenerator(nn.Module):
             )
             self.transformer_encoder = TransformerEncoder(encoder_layers, nlayers)
 
-        # self.decoder = nn.Linear(d_model, 1)
-        self.decoder = AffineExprDecoder(
+        # Gene Expression Decoder
+        self.decoder = ExprDecoder(
             d_model,
             explicit_zero_prob=explicit_zero_prob,
-            activation=decoder_activation,
-            adaptive_bias=decoder_adaptive_bias,
         )
+                
         self.cls_decoder = ClsDecoder(d_model, n_cls, nlayers=nlayers_cls)
         if do_mvc:
             self.mvc_decoder = MVCDecoder(
@@ -172,7 +192,6 @@ class TransformerGenerator(nn.Module):
                 arch_style=mvc_decoder_style,
                 explicit_zero_prob=explicit_zero_prob,
             )
-
         if 'scGPT_token_embs' in self.embs_to_include:
             self.init_weights()
 
@@ -187,22 +206,39 @@ class TransformerGenerator(nn.Module):
         input_pert_flags,
         src_key_padding_mask: Tensor,
     ) -> Tensor:
+        """
+        Encodes a sequence of src gene tokens and count values
+        
+        Args: 
+            src: gene indices corresponding to the gene tokens to encode
+            values: gene counts corresponding to the gene tokens in src
+            input_pert_flags: perturbation flags corresponding to the genes in src; 1 if a gene is perturbed, 0 if not
+            src_key_padding_mask: mask used during training for gene src tokens 
+        """
+                
+        # Mapping from embedding types 2 values
         embs2values = {}
+        
+        # Encode the gene tokens using scGPT gene token encoder
         if 'scGPT_token_embs' in self.embs_to_include:
             src_scgpt = self.encoder(src)  # (batch, seq_len, embsize)
-            self.cur_gene_token_embs = src_scgpt
             embs2values['scGPT_token_embs'] = src_scgpt
-        if 'genePT_token_embs' in self.embs_to_include:
-            src_genept = self.genept_encoder(src)  # (batch, seq_len, embsize)
-            embs2values['genePT_token_embs'] = src_genept
-            if 'scGPT_token_embs' in self.embs_to_include:
-                self.cur_gene_token_embs += src_genept
-            else:
-                self.cur_gene_token_embs = src_genept
+        # Encode the counts using scGPT counts encoder
         if 'scGPT_counts_embs' in self.embs_to_include:
             embs2values['scGPT_counts_embs']  = self.value_encoder(values)  # (batch, seq_len, embsize)
-            
+        # Encode the gene tokens using the genePT encoder
+        if 'genePT_token_embs_gpt' in self.embs_to_include or 'genePT_token_embs_llama' in self.embs_to_include:
+            src_genept = self.genept_encoder(src)  # (batch, seq_len, embsize)
+            embs2values['genePT_token_embs'] = src_genept
+        # Encode the gene tokens using the GO embeddings encoder
+        if 'GO_token_embs_gpt_avg' in self.embs_to_include or  'GO_token_embs_gpt_concat' in self.embs_to_include:
+            src_go_embs = self.go_encoder(src)
+            embs2values['GO_token_embs_' + self.go_emb_type] = src_go_embs
+        
+        # Encode the perturbation flags
         embs2values['pert_embs'] = self.pert_encoder(input_pert_flags)
+             
+        # Add all embeddings together
         seen_embs = False
         for emb, emb_value in embs2values.items():
             if not seen_embs:
@@ -211,13 +247,15 @@ class TransformerGenerator(nn.Module):
             else:
                 total_embs += emb_value
         total_embs = total_embs.type(torch.float32)
+        total_embs = self.ln(total_embs)
 
-        # total_embs = self.bn(total_embs.permute(0, 2, 1)).permute(0, 2, 1)
+        # Feed embeddings into transformer_encoder
         output = self.transformer_encoder(
             total_embs, src_key_padding_mask=src_key_padding_mask
         )
         return output  # (batch, seq_len, embsize)
 
+    # Not modified from original scGPT architecture
     def _get_cell_emb_from_layer(
         self, layer_output: Tensor, weights: Tensor = None
     ) -> Tensor:
@@ -257,6 +295,8 @@ class TransformerGenerator(nn.Module):
         do_sample: bool = False,
     ) -> Mapping[str, Tensor]:
         """
+        Forward pass through the model 
+        
         Args:
             src (:obj:`Tensor`): token ids, shape [batch_size, seq_len]
             values (:obj:`Tensor`): token values, shape [batch_size, seq_len]
@@ -283,7 +323,7 @@ class TransformerGenerator(nn.Module):
             from ..preprocess import binning
 
             processed_values = torch.stack(
-                [binning(row, n_bins=self.n_input_bins) for row in values], dim=0
+                [binning(row, n_bins=self.n_input_bins) for row in values], dim
             ).to(values.device)
         else:
             processed_values = values
@@ -292,7 +332,7 @@ class TransformerGenerator(nn.Module):
             src, processed_values, input_pert_flags, src_key_padding_mask
         )
         output = {}
-        mlm_output = self.decoder(transformer_output, values)
+        mlm_output = self.decoder(transformer_output)
         if self.explicit_zero_prob and do_sample:
             bernoulli = Bernoulli(probs=mlm_output["zero_probs"])
             output["mlm_output"] = bernoulli.sample() * mlm_output["pred"]
@@ -302,35 +342,6 @@ class TransformerGenerator(nn.Module):
             output["mlm_zero_probs"] = mlm_output["zero_probs"]
 
         cell_emb = self._get_cell_emb_from_layer(transformer_output, values)
-        if CLS:
-            output["cls_output"] = self.cls_decoder(cell_emb)  # (batch, n_cls)
-        if MVC:
-            mvc_output = self.mvc_decoder(
-                cell_emb,
-                self.cur_gene_token_embs,
-            )  # (batch, seq_len)
-            if self.explicit_zero_prob and do_sample:
-                bernoulli = Bernoulli(probs=mvc_output["zero_probs"])
-                output["mvc_output"] = bernoulli.sample() * mvc_output["pred"]
-            else:
-                output["mvc_output"] = mvc_output["pred"]  # (batch, seq_len)
-            if self.explicit_zero_prob:
-                output["mvc_zero_probs"] = mvc_output["zero_probs"]
-        if ECS:
-            # Here using customized cosine similarity instead of F.cosine_similarity
-            # to avoid the pytorch issue of similarity larger than 1.0, pytorch # 78064
-            # normalize the embedding
-            cell_emb_normed = F.normalize(cell_emb, p=2, dim=1)
-            cos_sim = torch.mm(cell_emb_normed, cell_emb_normed.t())  # (batch, batch)
-
-            # mask out diagnal elements
-            mask = torch.eye(cos_sim.size(0)).bool().to(cos_sim.device)
-            cos_sim = cos_sim.masked_fill(mask, 0.0)
-            # only optimize positive similarities
-            cos_sim = F.relu(cos_sim)
-
-            output["loss_ecs"] = torch.mean(1 - (cos_sim - self.ecs_threshold) ** 2)
-
         return output
 
     def encode_batch(
@@ -363,62 +374,6 @@ class TransformerGenerator(nn.Module):
                 output = output.cpu()
             outputs.append(output)
         return torch.cat(outputs, dim=0)
-
-    def pred_perturb(
-        self,
-        batch_data,
-        include_zero_gene="batch-wise",
-        gene_ids=None,
-        amp=True,
-    ) -> Tensor:
-        """
-        Args:
-            batch_data: a dictionary of input data with keys.
-
-        Returns:
-            output Tensor of shape [N, seq_len]
-        """
-        self.eval()
-        device = next(self.parameters()).device
-        batch_data.to(device)
-        batch_size = len(batch_data.pert)
-        x: torch.Tensor = batch_data.x
-        ori_gene_values = x[:, 0].view(batch_size, -1)  # (batch_size, n_genes)
-        pert_flags = x[:, 1].long().view(batch_size, -1)
-
-        if include_zero_gene in ["all", "batch-wise"]:
-            assert gene_ids is not None
-            if include_zero_gene == "all":
-                input_gene_ids = torch.arange(ori_gene_values.size(1), device=device)
-            else:  # batch-wise
-                input_gene_ids = (
-                    ori_gene_values.nonzero()[:, 1].flatten().unique().sort()[0]
-                )
-            input_values = ori_gene_values[:, input_gene_ids]
-            input_pert_flags = pert_flags[:, input_gene_ids]
-
-            mapped_input_gene_ids = map_raw_id_to_vocab_id(input_gene_ids, gene_ids)
-            mapped_input_gene_ids = mapped_input_gene_ids.repeat(batch_size, 1)
-
-            src_key_padding_mask = torch.zeros_like(
-                input_values, dtype=torch.bool, device=device
-            )
-            with torch.cuda.amp.autocast(enabled=amp):
-                output_dict = self(
-                    mapped_input_gene_ids,
-                    input_values,
-                    input_pert_flags,
-                    src_key_padding_mask=src_key_padding_mask,
-                    CLS=False,
-                    CCE=False,
-                    MVC=False,
-                    ECS=False,
-                    do_sample=True,
-                )
-            output_values = output_dict["mlm_output"].float()
-            pred_gene_values = torch.zeros_like(ori_gene_values)
-            pred_gene_values[:, input_gene_ids] = output_values
-        return pred_gene_values
     
     def pred_perturb(
         self,
@@ -429,8 +384,13 @@ class TransformerGenerator(nn.Module):
         pert_type = 'intrinsic'
     ) -> Tensor:
         """
+        Perturbation prediction for a given batch of data
+        
         Args:
-            batch_data: a dictionary of input data with keys.
+            batch_data: a dictionary of input data with keys
+            include_zero_gene: True if to include zero genes
+            gene_ids: gene_ids to predict for 
+            pert_type: intrinsic or extrinsic, depending on perturbation type
 
         Returns:
             output Tensor of shape [N, seq_len]
@@ -469,27 +429,22 @@ class TransformerGenerator(nn.Module):
                 input_values, dtype=torch.bool, device=device
             )
             with torch.cuda.amp.autocast(enabled=amp):
-                output_dict = self(
-                    mapped_input_gene_ids,
-                    input_values,
-                    input_pert_flags,
-                    src_key_padding_mask=src_key_padding_mask,
-                    CLS=False,
-                    CCE=False,
-                    MVC=False,
-                    ECS=False,
-                    do_sample=True,
-                )
+                with torch.no_grad():
+                    output_dict = self(
+                        mapped_input_gene_ids,
+                        input_values,
+                        input_pert_flags,
+                        src_key_padding_mask=src_key_padding_mask,
+                        CLS=False,
+                        CCE=False,
+                        MVC=False,
+                        ECS=False,
+                        do_sample=True,
+                    )
             output_values = output_dict["mlm_output"].float()
             pred_gene_values = torch.zeros_like(ori_gene_values)
             pred_gene_values[:, input_gene_ids] = output_values
         return pred_gene_values
-
-
-def generate_square_subsequent_mask(sz: int) -> Tensor:
-    """Generates an upper-triangular matrix of -inf, with zeros on diag."""
-    return torch.triu(torch.ones(sz, sz) * float("-inf"), diagonal=1)
-
 
 class GeneEncoder(nn.Module):
     def __init__(
@@ -498,6 +453,15 @@ class GeneEncoder(nn.Module):
         embedding_dim: int,
         padding_idx: Optional[int] = None,
     ):
+        """
+        Encodes a gene token during training using learned token representations. 
+        Initialized with pre-trained scGPT gene token embeddings.
+        
+        Args: 
+            num_embeddings: number of genes
+            embedding_dim: dimension of the gene
+            padding_idx: padding_idx for the Embedding
+        """
         super().__init__()
         self.embedding = nn.Embedding(
             num_embeddings, embedding_dim, padding_idx=padding_idx
@@ -508,172 +472,77 @@ class GeneEncoder(nn.Module):
         x = self.embedding(x)  # (batch, seq_len, embsize)
         x = self.enc_norm(x)
         return x
-
+                
 class GenePTEncoder(nn.Module):
     def __init__(
         self,
         num_embeddings: int,
         embedding_dim: int,
+        proj_layer = None,
         padding_idx: Optional[int] = None,
         genept_lookup_embed: Optional = [],
         genept_embs_size = 1536
     ):
+        """
+        Encodes a gene token during training using textual genePT representations. 
+        Initialized with pre-trained genePT gene annotations embedded using LLMs.
+        
+        Args: 
+            num_embeddings: number of genes
+            embedding_dim: dimension of the gene
+            padding_idx: padding_idx for the Embedding
+            genept_lookup_embed: pre-trained embeddings used to initialize the Embedding layer
+            genept_embs_size: size of the pre-trained embeddings
+        """
         super().__init__()
         self.embedding = nn.Embedding.from_pretrained(torch.from_numpy(genept_lookup_embed), freeze = False, padding_idx=padding_idx)
-        self.fc = nn.Linear(genept_embs_size, embedding_dim, dtype = torch.double)
+        self.enc_norm = nn.LayerNorm(genept_embs_size)
+        if proj_layer:
+            print("Using a learned projection layer")
+            self.proj_layer = proj_layer
+        else:
+            self.proj_layer = nn.Linear(genept_embs_size, embedding_dim)
         self.enc_norm = nn.LayerNorm(embedding_dim)
+       
 
     def forward(self, x: Tensor) -> Tensor:
-        x = self.embedding(x)  # (batch, seq_len, embsize)
-        x = self.fc(x).float()
-        # x = self.enc_norm(x)
+        x = self.embedding(x).float()  # (batch, seq_len, embsize)
+        x = self.proj_layer(x)
+        x = self.enc_norm(x)
         return x
-
-class AffineExprDecoder(nn.Module):
-    def __init__(
-        self,
-        d_model: int,
-        explicit_zero_prob: bool = False,
-        activation: Optional[str] = None,
-        tanh_coeff: bool = False,
-        adaptive_bias: bool = False,
-    ):
-        """
-        Predict the expression value of each gene in an affine like form of Ax + b.
-        This decoder takes two ExprDecoder intrinsically to genrate the coefficient A and bias b.
-
-        Args:
-            d_model: The embedding dimension.
-            explicit_zero_prob: If True, predict the probability of each gene being
-                zero.
-            activation: The activation function for the coefficient A and bias b.
-            tanh_coeff: If True, use tanh activation for the coefficient A.
-            adaptive_bias: If True, use a learnable bias for the bias b.
-        """
-        super().__init__()
-        self.explicit_zero_prob = explicit_zero_prob
-        self.tanh_coeff = tanh_coeff
-        self.adaptive_bias = adaptive_bias
-        self.coeff_decoder = ExprDecoder(d_model, explicit_zero_prob=explicit_zero_prob)
-        self.bias_decoder = ExprDecoder(d_model, explicit_zero_prob=explicit_zero_prob)
-
-        self.activation = activation
-        if activation is not None:
-            assert hasattr(nn, activation), f"Unknown activation: {activation}"
-            self.activation = getattr(nn, activation)()
-
-    def forward(self, x: Tensor, values: Tensor) -> Tensor:
-        """
-        Args:
-            x: Tensor, shape [batch_size, seq_len, embsize]
-            values: Tensor, shape [batch_size, seq_len]
-
-        Returns:
-            output Tensor of shape [batch_size, seq_len]
-        """
-        coeff = self.coeff_decoder(x)
-        bias = self.bias_decoder(x)
-
-        if self.activation is not None:
-            coeff["pred"] = self.activation(coeff["pred"])
-            bias["pred"] = self.activation(bias["pred"])
-
-        # if self.tanh_coeff:
-        #     coeff["pred"] = 1 + torch.tanh(coeff["pred"])
-
-        if self.adaptive_bias:
-            # bias["pred"] = bias["pred"] * values.mean(dim=1, keepdim=True)
-            non_zero_value_mean = values.sum(dim=1, keepdim=True) / (values != 0).sum(
-                dim=1, keepdim=True
-            )
-            bias["pred"] = bias["pred"] * non_zero_value_mean
-
-        if self.explicit_zero_prob:
-            return {
-                "pred": coeff["pred"] * values + bias["pred"],
-                "zero_probs": coeff["zero_probs"],
-            }
-
-        return dict(pred=coeff["pred"] * values + bias["pred"])
-
-
-class TokenEmbedding(nn.Module):
+                
+class GOPTEncoder(nn.Module):
     def __init__(
         self,
         num_embeddings: int,
         embedding_dim: int,
         padding_idx: Optional[int] = None,
-        zero_out_idx: Optional[int] = None,
+        gopt_lookup_embed: Optional = [],
+        gopt_embs_size = 1536
     ):
         """
-        Generic token embedding module.
-
-        Args:
-            num_embeddings: The number of tokens.
-            embedding_dim: The embedding dimension.
-            padding_idx: The index of the padding token.
-            zero_out_idx: Indicate if any idx embedding should be zero vector.
+        Encodes a gene token during training using textual GO annotations. 
+        Initialized with pre-trained GO (Gene Ontology) gene annotations embedded using LLMs.
+        
+        Args: 
+            num_embeddings: number of genes
+            embedding_dim: dimension of the gene
+            padding_idx: padding_idx for the Embedding
+            genept_lookup_embed: pre-trained embeddings used to initialize the Embedding layer
+            genept_embs_size: size of the pre-trained embeddings
         """
         super().__init__()
-        self.embedding = nn.Embedding(
-            num_embeddings, embedding_dim, padding_idx=padding_idx
-        )
+        self.embedding = nn.Embedding.from_pretrained(torch.from_numpy(gopt_lookup_embed), freeze = False, padding_idx=padding_idx)
+        self.fc = nn.Linear(gopt_embs_size, embedding_dim)
         self.enc_norm = nn.LayerNorm(embedding_dim)
 
-        self.zero_out_idx = zero_out_idx
-        if zero_out_idx is not None:
-            self._fill_idx_with_zero(zero_out_idx)
-            zero_vector = self(zero_out_idx)
-            assert torch.all(zero_vector == 0.0)
-            assert not zero_vector.requires_grad
-
-    def _fill_idx_with_zero(self, idx) -> None:
-        with torch.no_grad():
-            self.embedding.weight[idx].fill_(0)
-
     def forward(self, x: Tensor) -> Tensor:
-        x = self.embedding(x)  # (batch, seq_len, embsize)
+        x = self.embedding(x).float()  # (batch, seq_len, embsize)
+        x = self.fc(x)
         x = self.enc_norm(x)
         return x
 
-
-class PositionalEncoding(nn.Module):
-    def __init__(self, d_model: int, dropout: float = 0.1, max_len: int = 5000):
-        super().__init__()
-        self.dropout = nn.Dropout(p=dropout)
-
-        position = torch.arange(max_len).unsqueeze(1)
-        div_term = torch.exp(
-            torch.arange(0, d_model, 2) * (-math.log(10000.0) / d_model)
-        )
-        pe = torch.zeros(max_len, 1, d_model)
-        pe[:, 0, 0::2] = torch.sin(position * div_term)
-        pe[:, 0, 1::2] = torch.cos(position * div_term)
-        self.register_buffer("pe", pe)
-
-    def forward(self, x: Tensor) -> Tensor:
-        """
-        Args:
-            x: Tensor, shape [seq_len, batch_size, embedding_dim]
-        """
-        x = x + self.pe[: x.size(0)]
-        return self.dropout(x)
-
-
-class Similarity(nn.Module):
-    """
-    Dot product or cosine similarity
-    """
-
-    def __init__(self, temp):
-        super().__init__()
-        self.temp = temp
-        self.cos = nn.CosineSimilarity(dim=-1)
-
-    def forward(self, x, y):
-        return self.cos(x, y) / self.temp
-
-
+    
 class ClsDecoder(nn.Module):
     """
     Decoder for classification task.
@@ -703,3 +572,201 @@ class ClsDecoder(nn.Module):
         for layer in self._decoder:
             x = layer(x)
         return self.out_layer(x)
+    
+    
+def get_batch_data(batch_data, include_zero_gene, n_genes, max_seq_len, gene_ids, device):
+    """
+    Parses a batch of data from a PertData batch object.
+    
+    Args:
+        include_zero_gene: true if to include zero genes
+        n_genes: number of total genes in the sequence
+        max_seq_len: max sequence length to use during training
+        gene_ids: vocab indices of the n_genes in the sequence
+        device: device used for training
+        
+    Returns:
+        mapped_input_gene_ids: src token indices corresponding to sampled gene tokens
+        input_values: gene count values corresponding to mapped_input_gene_ids
+        input_pert_flags: perturbation flags corresponding to mapped_input_gene_ids; 1 if gene is perturbed, 0 if not
+        src_key_padding_mask: mask for src token indices
+        target_values: target post-perturbation values for sampled gene tokens corresponding to mapped_input_genes_ids
+    """
+    batch_size = len(batch_data.y)
+    x: torch.Tensor = batch_data.x  # (batch_size * n_genes, 2)
+    ori_gene_values = x[:, 0].view(batch_size, n_genes)
+    pert_flags = x[:, 1].long().view(batch_size, n_genes)
+    target_gene_values = batch_data.y  # (batch_size, n_genes)
+        
+    
+    if include_zero_gene in ["all", "batch-wise"]:
+        if include_zero_gene == "all":
+            input_gene_ids = torch.arange(n_genes, device=device, dtype=torch.long)
+        else:
+            input_gene_ids = (
+                ori_gene_values.nonzero()[:, 1].flatten().unique().sort()[0]
+            )
+        # sample input_gene_id
+        if len(input_gene_ids) > max_seq_len:
+            input_gene_ids = torch.randperm(len(input_gene_ids), device=device)[
+                :max_seq_len
+            ]
+        input_values = ori_gene_values[:, input_gene_ids]
+        input_pert_flags = pert_flags[:, input_gene_ids]
+        target_values = target_gene_values[:, input_gene_ids]
+
+        mapped_input_gene_ids = map_raw_id_to_vocab_id(input_gene_ids, gene_ids)
+        mapped_input_gene_ids = mapped_input_gene_ids.repeat(batch_size, 1)
+        src_key_padding_mask = torch.zeros_like(
+            input_values, dtype=torch.bool, device=device
+        )
+    return mapped_input_gene_ids, input_values, input_pert_flags, src_key_padding_mask, target_values
+
+    
+        
+def train_epoch(model, train_loader, loss_fn, optimizer, scheduler, logger, scaler, device, n_genes, gene_ids, num_epoch, include_zero_gene, amp, dataset_name, max_seq_len, log_interval, gene2idx = {}) -> None:
+    """
+    Trains the model for one epoch on train_loader.
+    """
+    model.train()
+    total_loss = 0.0
+    start_time = time.time()
+
+    num_batches = len(train_loader)
+    
+    for batch, batch_data in enumerate(train_loader):
+        batch_data.to(device)
+        mapped_input_gene_ids, input_values, input_pert_flags, src_key_padding_mask, target_values = get_batch_data(batch_data, include_zero_gene, n_genes, max_seq_len, gene_ids, device)
+        
+        with torch.cuda.amp.autocast(enabled=amp):
+            output_dict = model(
+                mapped_input_gene_ids,
+                input_values,
+                input_pert_flags,
+                src_key_padding_mask=src_key_padding_mask,
+                CLS=CLS,
+                CCE=CCE,
+                MVC=MVC,
+                ECS=ECS,
+            )
+            output_values = output_dict["mlm_output"]
+
+            masked_positions = torch.ones_like(
+                input_values, dtype=torch.bool
+            )  # Use all
+            loss = loss_fn(output_values, target_values, masked_positions)
+
+        model.zero_grad()
+        scaler.scale(loss).backward()
+        scaler.unscale_(optimizer)
+        with warnings.catch_warnings(record=True) as w:
+            warnings.filterwarnings("always")
+            torch.nn.utils.clip_grad_norm_(
+                model.parameters(),
+                1.0,
+                error_if_nonfinite=False if scaler.is_enabled() else True,
+            )
+            if len(w) > 0:
+                logger.warning(
+                    f"Found infinite gradient. This may be caused by the gradient "
+                    f"scaler. The current scale is {scaler.get_scale()}. This warning "
+                    "can be ignored if no longer occurs after autoscaling of the scaler."
+                )
+        scaler.step(optimizer)
+        scaler.update()
+        total_loss += loss.item()
+        if batch % log_interval == 0 and batch > 0:
+            lr = scheduler.get_last_lr()[0]
+            ms_per_batch = (time.time() - start_time) * 1000 / log_interval
+            cur_loss = total_loss / log_interval
+            logger.info(
+                f"| epoch {num_epoch:3d} | {batch:3d}/{num_batches:3d} batches | "
+                f"lr {lr:05.6f} | ms/batch {ms_per_batch:5.2f} | "
+                f"loss {cur_loss:7.5f}|"
+            )
+            total_loss = 0
+            start_time = time.time()
+
+
+def evaluate_on_epoch(model, val_loader, loss_fn, logger, scaler, device, n_genes, gene_ids, save_dir, include_zero_gene, amp, epoch, dataset_name, model_type, rnd_seed, loss_to_minimize, max_seq_len, log_interval, outputs_dir, gene2idx = {}) -> float:
+    """
+    Evaluates the model on MSE loss on validation loader
+    """
+    model.eval()
+    total_loss = 0.0
+    with torch.no_grad():
+        for batch, batch_data in enumerate(val_loader):
+            batch_data.to(device)
+            mapped_input_gene_ids, input_values, input_pert_flags, src_key_padding_mask, target_values = get_batch_data(batch_data, include_zero_gene, n_genes, max_seq_len, gene_ids, device)
+
+            with torch.cuda.amp.autocast(enabled=amp):
+                output_dict = model(
+                    mapped_input_gene_ids,
+                    input_values,
+                    input_pert_flags,
+                    src_key_padding_mask=src_key_padding_mask,
+                    CLS=CLS,
+                    CCE=CCE,
+                    MVC=MVC,
+                    ECS=ECS,
+                    do_sample=True,
+                )
+                output_values = output_dict["mlm_output"]
+
+                masked_positions = torch.ones_like(
+                    input_values, dtype=torch.bool, device=input_values.device
+                )
+                loss = loss_fn(output_values, target_values, masked_positions)
+            total_loss += loss.item()
+    mse_loss = total_loss / len(val_loader)
+    metrics = {'val_mse' : mse_loss}    
+    return metrics
+
+
+def train_model(model, pert_data, epochs, loss_fn, optimizer, scheduler, scaler, device, gene_ids, logger, include_zero_gene, amp, dataset_name, model_type, rnd_seed, max_seq_len, log_interval, gene2idx = {}, save_models_each_epoch = True, save_dir = "/tmp", loss_to_minimize = 'mse'):
+    """
+    Trains the model for a given number of epochs.
+    """
+   
+    best_val_loss = float("inf")
+    best_val_pearson_de = 0
+    best_model = None
+    patience = 0
+    n_genes = len(gene_ids)
+
+    for epoch in range(1, epochs + 1):
+        outputs_dir = os.path.join(save_dir, "/metrics/val/val_metrics_detailed_epoch" + str(epoch) + ".json")
+        epoch_start_time = time.time()
+        train_loader = pert_data.dataloader["train_loader"]
+        val_loader = pert_data.dataloader["val_loader"]
+
+        train_epoch(model, train_loader, loss_fn, optimizer, scheduler, logger, scaler, device, n_genes, gene_ids, epoch, include_zero_gene, amp, dataset_name, max_seq_len, log_interval, gene2idx)
+        val_metrics = evaluate_on_epoch(model, val_loader, loss_fn, logger, scaler, device, n_genes, gene_ids, save_dir, include_zero_gene, amp, epoch, dataset_name, model_type, rnd_seed, loss_to_minimize, max_seq_len, log_interval, outputs_dir, gene2idx)
+        elapsed = time.time() - epoch_start_time
+        val_loss = val_metrics[f'val_{loss_to_minimize}']
+        logger.info("-" * 89)
+        logger.info(
+            f"| end of epoch {epoch:3d} | time: {elapsed:5.2f}s | "
+            f"valid loss/mse_de {val_loss:7.4f} |"
+        )
+        logger.info("-" * 89)
+
+        if val_loss < best_val_loss:
+            best_val_loss = val_loss
+            best_model = copy.deepcopy(model)
+            logger.info(f"Best model with score {best_val_loss:5.7f}")
+            patience = 0
+        else:
+            patience += 1
+            if patience >= early_stop:
+                logger.info(f"Early stop at epoch {epoch}")
+                break
+
+        if save_models_each_epoch:
+            torch.save(
+                model.state_dict(),
+                save_dir / f"models/model_{epoch}.pt",
+            )
+
+        scheduler.step()
+    return best_model

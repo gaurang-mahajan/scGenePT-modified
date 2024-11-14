@@ -209,7 +209,7 @@ if __name__ == "__main__":
     go_embs_to_include, go_emb_type, go_emb_dim, found_genes_go = initialize_go_embeddings(embs_to_include, dataset_genes, vocab, args.model_type, args.pretrained_model_dir)
     
     model = scGenePT(
-        ntoken=tokens,
+        ntoken=ntokens,
         d_model=EMBSIZE,
         nhead=NHEAD,
         d_hid=D_HID,
@@ -225,11 +225,11 @@ if __name__ == "__main__":
         use_fast_transformer=use_fast_transformer,
         embs_to_include = embs_to_include,
         genept_embs = genept_embs, 
-        genept_embed_type = genept_emb_type, 
-        genept_emb_dim = genept_emb_dim,
+        genept_emb_type = genept_emb_type, 
+        genept_emb_size = genept_emb_dim,
         go_embs_to_include = go_embs_to_include,
         go_emb_type = go_emb_type,
-        go_emb_dim = go_emb_dim
+        go_emb_size = go_emb_dim
     )
     
     # If we don't to include learned attention, it needs to be taken out of the weights that are being initialize
