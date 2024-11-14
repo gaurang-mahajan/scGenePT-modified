@@ -624,7 +624,10 @@ def get_batch_data(batch_data, include_zero_gene, n_genes, max_seq_len, gene_ids
 
     
         
-def train_epoch(model, train_loader, loss_fn, optimizer, scheduler, logger, scaler, device, n_genes, gene_ids, num_epoch, include_zero_gene, amp, dataset_name, max_seq_len, log_interval, gene2idx = {}) -> None:
+def train_epoch(model, train_loader, loss_fn, optimizer, 
+                scheduler, logger, scaler, device, n_genes, gene_ids, 
+                num_epoch, include_zero_gene, amp, dataset_name, 
+                max_seq_len, log_interval, gene2idx = {}) -> None:
     """
     Trains the model for one epoch on train_loader.
     """
@@ -636,7 +639,8 @@ def train_epoch(model, train_loader, loss_fn, optimizer, scheduler, logger, scal
     
     for batch, batch_data in enumerate(train_loader):
         batch_data.to(device)
-        mapped_input_gene_ids, input_values, input_pert_flags, src_key_padding_mask, target_values = get_batch_data(batch_data, include_zero_gene, n_genes, max_seq_len, gene_ids, device)
+        mapped_input_gene_ids, input_values, input_pert_flags, src_key_padding_mask, target_values = get_batch_data(batch_data, include_zero_gene,
+                                                                                                                    n_genes, max_seq_len, gene_ids, device)
         
         with torch.cuda.amp.autocast(enabled=amp):
             output_dict = model(
@@ -688,7 +692,11 @@ def train_epoch(model, train_loader, loss_fn, optimizer, scheduler, logger, scal
             start_time = time.time()
 
 
-def evaluate_on_epoch(model, val_loader, loss_fn, logger, scaler, device, n_genes, gene_ids, save_dir, include_zero_gene, amp, epoch, dataset_name, model_type, rnd_seed, loss_to_minimize, max_seq_len, log_interval, outputs_dir, gene2idx = {}) -> float:
+def evaluate_on_epoch(model, val_loader, loss_fn, 
+                      logger, scaler, device, n_genes, gene_ids, save_dir, 
+                      include_zero_gene, amp, epoch, dataset_name, model_type, 
+                      rnd_seed, loss_to_minimize, max_seq_len, log_interval, 
+                      outputs_dir, gene2idx = {}) -> float:
     """
     Evaluates the model on MSE loss on validation loader
     """
@@ -723,7 +731,12 @@ def evaluate_on_epoch(model, val_loader, loss_fn, logger, scaler, device, n_gene
     return metrics
 
 
-def train_model(model, pert_data, epochs, loss_fn, optimizer, scheduler, scaler, device, gene_ids, logger, include_zero_gene, amp, dataset_name, model_type, rnd_seed, max_seq_len, log_interval, gene2idx = {}, save_models_each_epoch = True, save_dir = "/tmp", loss_to_minimize = 'mse'):
+def train_model(model, pert_data, epochs, loss_fn, 
+                optimizer, scheduler, scaler, device,
+                gene_ids, logger, include_zero_gene, amp, 
+                dataset_name, model_type, rnd_seed, 
+                max_seq_len, log_interval, gene2idx = {}, 
+                save_models_each_epoch = False, save_dir = "/tmp", loss_to_minimize = 'mse'):
     """
     Trains the model for a given number of epochs.
     """
@@ -740,8 +753,20 @@ def train_model(model, pert_data, epochs, loss_fn, optimizer, scheduler, scaler,
         train_loader = pert_data.dataloader["train_loader"]
         val_loader = pert_data.dataloader["val_loader"]
 
-        train_epoch(model, train_loader, loss_fn, optimizer, scheduler, logger, scaler, device, n_genes, gene_ids, epoch, include_zero_gene, amp, dataset_name, max_seq_len, log_interval, gene2idx)
-        val_metrics = evaluate_on_epoch(model, val_loader, loss_fn, logger, scaler, device, n_genes, gene_ids, save_dir, include_zero_gene, amp, epoch, dataset_name, model_type, rnd_seed, loss_to_minimize, max_seq_len, log_interval, outputs_dir, gene2idx)
+        # Train model on train_loader
+        train_epoch(model, train_loader, loss_fn, optimizer, 
+                    scheduler, logger, scaler, device, n_genes, 
+                    gene_ids, epoch, include_zero_gene, amp, 
+                    dataset_name, max_seq_len, log_interval, gene2idx)
+        
+        # Validate on val_loader
+        val_metrics = evaluate_on_epoch(model, val_loader, loss_fn, logger, 
+                                        scaler, device, n_genes, gene_ids, 
+                                        save_dir, include_zero_gene, amp, epoch, 
+                                        dataset_name, model_type, rnd_seed, 
+                                        loss_to_minimize, max_seq_len, log_interval, 
+                                        outputs_dir, gene2idx)
+        
         elapsed = time.time() - epoch_start_time
         val_loss = val_metrics[f'val_{loss_to_minimize}']
         logger.info("-" * 89)
