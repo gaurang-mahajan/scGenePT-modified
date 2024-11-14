@@ -20,12 +20,12 @@ scGenePT can use multiple sources for textual gene annotations. The different so
 
 model-type | Gene Embedding | Download link | Should be under 
 ---- | ---- | ---- | --- |
-scgenept_ncbi| NCBI Gene summaries | [GenePT zenodo Link](https://zenodo.org/records/10833191) <br> [CZI-Hosted Link](https://drive.google.com/file/d/1wx-CFeqp5xFdynJrmUX6a73xxxfdZ0U4/view?usp=drive_link) | `models/pretrained/genept/` <br> NCBI_gene_embedding_ada.pickle
-scgenept_ncbi+uniprot | NCBI Gene summaries + UniProt protein summaries| [CZI-Hosted Link](https://drive.google.com/file/d/1EyuQwY8B3DU3W2VBuiBSoJiJw7KHntu4/view?usp=drive_link)| `models/pretrained/genept` <br> NCBI+UniProt_embedding_ada.pkl
-scgenept_go_c| GO Cellular Components Annotations| [CZI-Hosted Link](https://drive.google.com/file/d/1oGnxs56GqGQA5gaocg4uPf_UwtomJ0Tp/view?usp=drive_link)|`models/pretrained/genept` <br> GO_C_gene_embeddings_concat.pickle **or** GO_C_gene_embeddings_avg.pickle
-scgenept_go_f| GO Molecular Function Annotations| [CZI-Hosted Link](https://drive.google.com/file/d/1ZGhHabXSg6eGkSCCMKf6o2-HvHIKpp3s/view?usp=drive_link) |`models/pretrained/genept` <br> GO_F_gene_embeddings_concat.pickle **or** GO_F_gene_embeddings_avg.pickle
-scgenept_go_p| GO Biological Processes Annotations| [CZI-Hosted Link](https://drive.google.com/file/d/1pVRUpth4U8zhi1mRUgF5-lNMOg4jM9FF/view?usp=drive_link)| `models/pretrained/genept` <br> GO_P_gene_embeddings_concat.pickle **or** GO_P_gene_embeddings_avg.pickle
-scgenept_go_all| Aggregation of GO-C + GO-F + GO-P| [CZI-Hosted Link](https://drive.google.com/file/d/1cQi6CtOEESXX9iVokwlcf_onVD3OmWNk/view?usp=drive_link)|  `models/pretrained/genept` <br> GO_all_gene_embeddings_concat.pickle **or** GO_all_gene_embeddings_avg.pickle
+scgenept_ncbi_gpt| NCBI Gene summaries | [GenePT zenodo Link](https://zenodo.org/records/10833191) <br> [CZI-Hosted Link](https://drive.google.com/file/d/1wx-CFeqp5xFdynJrmUX6a73xxxfdZ0U4/view?usp=drive_link) | `models/pretrained/genept/` <br> NCBI_gene_embedding_ada.pickle
+scgenept_ncbi+uniprot_gpt | NCBI Gene summaries + UniProt protein summaries| [CZI-Hosted Link](https://drive.google.com/file/d/1EyuQwY8B3DU3W2VBuiBSoJiJw7KHntu4/view?usp=drive_link)| `models/pretrained/genept` <br> NCBI+UniProt_embedding_ada.pkl
+scgenept_go_c_gpt| GO Cellular Components Annotations| [CZI-Hosted Link](https://drive.google.com/file/d/1oGnxs56GqGQA5gaocg4uPf_UwtomJ0Tp/view?usp=drive_link)|`models/pretrained/genept` <br> GO_C_gene_embeddings_concat.pickle **or** GO_C_gene_embeddings_avg.pickle
+scgenept_go_f_gpt| GO Molecular Function Annotations| [CZI-Hosted Link](https://drive.google.com/file/d/1ZGhHabXSg6eGkSCCMKf6o2-HvHIKpp3s/view?usp=drive_link) |`models/pretrained/genept` <br> GO_F_gene_embeddings_concat.pickle **or** GO_F_gene_embeddings_avg.pickle
+scgenept_go_p_gpt| GO Biological Processes Annotations| [CZI-Hosted Link](https://drive.google.com/file/d/1pVRUpth4U8zhi1mRUgF5-lNMOg4jM9FF/view?usp=drive_link)| `models/pretrained/genept` <br> GO_P_gene_embeddings_concat.pickle **or** GO_P_gene_embeddings_avg.pickle
+scgenept_go_all_gpt| Aggregation of GO-C + GO-F + GO-P| [CZI-Hosted Link](https://drive.google.com/file/d/1cQi6CtOEESXX9iVokwlcf_onVD3OmWNk/view?usp=drive_link)|  `models/pretrained/genept` <br> GO_all_gene_embeddings_concat.pickle **or** GO_all_gene_embeddings_avg.pickle
 
 **Training Data** <br>
 
@@ -43,7 +43,7 @@ pert_data.get_dataloader(batch_size=batch_size, test_batch_size=val_batch_size)
 **Training Script** <br>
 Once the pre-trained scGPT model and pre-computed gene embeddings have been downloaded under `models/pretrained/`, as described above, scGenePT can be trained using: 
 
-`python train.py --model-type=scgenept_ncbi+uniprot --num-epochs=20 --dataset=norman --device=cuda:0 --rnd-seed=42`
+`python train.py --model-type=scgenept_ncbi+uniprot_gpt --num-epochs=20 --dataset=norman --device=cuda:0 --rnd-seed=42`
 
 The training arguments are the following: 
 
