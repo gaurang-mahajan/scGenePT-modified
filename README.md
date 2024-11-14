@@ -29,9 +29,9 @@ scgenept_go_all| Aggregation of GO-C + GO-F + GO-P| [CZI-Hosted Link](https://dr
 
 **Training Data** <br>
 
-We use the processed versions of the Adamson and Norman datasets from [GEARS](https://github.com/snap-stanford/GEARS). Note that there are some differences in dataloaders between differrent versions, we trained and evaluated the models on GEARS v=0.0.2
+We use the processed versions of the Adamson and Norman datasets from [GEARS](https://github.com/snap-stanford/GEARS). Note that there are some differences in dataloaders between differrent versions, we trained and evaluated the models on GEARS v=0.0.2. This code snippet is already embedded in the the codebase. 
 To get the training, val and test splits:
-```
+```python
 from GEARS import PertData
 dataset_name = 'norman' # or 'adamson'
 pert_data = PertData("data/")
@@ -41,6 +41,8 @@ pert_data.get_dataloader(batch_size=batch_size, test_batch_size=val_batch_size)
 ```
 
 **Training Script** <br>
+Once the pre-trained scGPT model and pre-computed gene embeddings have been downloaded under `models/pretrained/`, as described above, scGenePT can be trained using: 
+
 `python train.py --model-type=scgenept_ncbi+uniprot --num-epochs=20 --dataset=norman --device=cuda:0 --rnd-seed=42`
 
 The training arguments are the following: 
