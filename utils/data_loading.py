@@ -9,99 +9,100 @@ import torch
 GPT_ADA_002_EMBED_DIM = 1536
 
 # Mapping from embedding type to location on file of gene embeddings
-GENE_EMBED_TYPE2LOCATION = {'ncbi_gpt' : 'genept/NCBI_gene_embedding_ada.pickle' ,
-                           'ncbi+uniprot_gpt' : 'genept/NCBI+UniProt_embedding-gpt3.5-ada.pkl',
-                           'go_c_gpt_concat': 'go_terms/GO_C_gene_embeddings_avg.pickle', 
-                           'go_p_gpt_concat': 'go_terms/GO_P_gene_embeddings_avg.pickle', 
-                           'go_f_gpt_concat': 'go_terms/GO_F_gene_embeddings_avg.pickle',
-                           'go_all_gpt_concat': 'go_terms/GO_all_gene_embeddings_avg.pickle', 
-                           'go_c_gpt_avg': 'go_terms/GO_C_gene_embeddings_avg.pickle', 
-                           'go_p_gpt_avg': 'go_terms/GO_P_gene_embeddings_avg.pickle', 
-                           'go_f_gpt_avg': 'go_terms/GO_F_gene_embeddings_avg.pickle',
-                           'go_all_gpt_avg': 'go_terms/GO_all_gene_embeddings_avg.pickle'}
+GENE_EMBED_TYPE2LOCATION = {'ncbi_gpt' : 'gene_embeddings/NCBI_gene_embeddings-gpt3.5-ada.pickle' ,
+                           'ncbi+uniprot_gpt' : 'gene_embeddings/NCBI+UniProt_embeddings-gpt3.5-ada.pkl',
+                           'go_c_gpt_concat': 'gene_embeddings/GO_C_gene_embeddings-gpt3.5-ada-concat.pickle', 
+                           'go_p_gpt_concat': 'gene_embeddings/GO_P_gene_embeddings-gpt3.5-ada-concat.pickle', 
+                           'go_f_gpt_concat': 'gene_embeddings/GO_F_gene_embeddings-gpt3.5-ada-concat.pickle',
+                           'go_all_gpt_concat': 'gene_embeddings/GO_all_gene_embeddings-gpt3.5-ada-concat.pickle', 
+                           'go_c_gpt_avg': 'gene_embeddings/GO_C_gene_embeddings-gpt3.5-ada-avg.pickle', 
+                           'go_p_gpt_avg': 'gene_embeddings/GO_P_gene_embedding-gpt3.5-ada-avg.pickle', 
+                           'go_f_gpt_avg': 'gene_embeddings/GO_F_gene_embeddings-gpt3.5-ada-avg.pickle',
+                           'go_all_gpt_avg': 'gene_embeddings/GO_all_gene_embeddings-gpt3.5-ada-avg.pickle'}
 
-def get_embs_to_include(args):
+def get_embs_to_include(model_type):
     """
     Processes and returns a list containing the types of embeddings to include for gene representation based on model_type
     
     Args:
-        args: command line args, containing model-type
+        model_type: name of model, used to parse the embeddings to be included
         
     Returns:
         embs_to_include: list containing types of embeddings to include for gene representations
     """
     # GenePT Gene embeddings - either NCBI gene summaries or NCBI gene + UniProt protein summaries computed with GPT-3.5
-    if args.model_type in ['genept_ncbi_gpt', 
-                           'genept_ncbi+uniprot_gpt', 
-                           'genept_ncbi+uniprot_gpt_no_attention', 
-                           'genept_ncbi_gpt_no_attention']:
+    print(f"scGenePT model-type: {model_type}")
+    if model_type in ['genept_ncbi_gpt', 
+                      'genept_ncbi+uniprot_gpt', 
+                      'genept_ncbi+uniprot_gpt_no_attention', 
+                      'genept_ncbi_gpt_no_attention']:
         embs_to_include = ['genePT_token_embs_gpt']
     # GO Gene Ontology Gene Annotations, computed with GPT-3.5
     # using averaging of gene annotations terms
-    elif args.model_type in ['go_c_gpt_avg',  # Cellular Components
-                             'go_f_gpt_avg',  # Moldecular Function
-                             'go_p_gpt_avg',  # Biological Process
-                             'go_all_gpt_avg']: # Average of GO_c + GO_f + GO_p
+    elif model_type in ['go_c_gpt_avg',  # Cellular Components
+                        'go_f_gpt_avg',  # Moldecular Function
+                        'go_p_gpt_avg',  # Biological Process
+                        'go_all_gpt_avg']: # Average of GO_c + GO_f + GO_p
         embs_to_include = ['GO_token_embs_gpt_avg']
     # using concatenation of gene annotation terms
-    elif args.model_type in ['go_c_gpt_concat', 
-                             'go_f_gpt_concat',
-                             'go_p_gpt_concat', 
-                             'go_all_gpt_concat', 
-                             'go_c_gpt_concat_no_attention', 
-                             'go_f_gpt_concat_no_attention', 
-                             'go_p_gpt_concat_no_attention', 
-                             'go_all_gpt_concat_no_attention']:
+    elif model_type in ['go_c_gpt_concat', 
+                        'go_f_gpt_concat',
+                        'go_p_gpt_concat', 
+                        'go_all_gpt_concat', 
+                        'go_c_gpt_concat_no_attention', 
+                        'go_f_gpt_concat_no_attention', 
+                        'go_p_gpt_concat_no_attention', 
+                        'go_all_gpt_concat_no_attention']:
         embs_to_include = ['GO_token_embs_gpt_concat']
     # scGPT token embeddings + scGPT counts embeddings + GenePT Gene embeddings - 
     # either NCBI gene summaries or NCBI gene + UniProt protein summaries computed with GPT-3.5
-    elif args.model_type in ['scgenept_ncbi_gpt', 
-                             'scgenept_ncbi+uniprot_gpt', 
-                             'scgenept_ncbi_gpt_no_attention', 
-                             'scgenept_ncbi+uniprot_gpt_no_attention']:
+    elif model_type in ['scgenept_ncbi_gpt', 
+                        'scgenept_ncbi+uniprot_gpt', 
+                        'scgenept_ncbi_gpt_no_attention', 
+                        'scgenept_ncbi+uniprot_gpt_no_attention']:
         embs_to_include = ['scGPT_counts_embs', 'scGPT_token_embs', 'genePT_token_embs_gpt']
     # scGPT token embeddings + scGPT counts embeddings + Gene Embeddings from GO Gene Ontology Annotations, computed with GPT-3.5
     # using averaging of gene annotations terms
-    elif args.model_type in ['scgptgo_c_gpt_avg', 
-                             'scgptgo_f_gpt_avg', 
-                             'scgptgo_p_gpt_avg', 
-                             'scgptgo_all_gpt_avg',]:
+    elif model_type in ['scgenept_go_c_gpt_avg', 
+                        'scgenept_go_f_gpt_avg', 
+                        'scgenept_go_p_gpt_avg', 
+                        'scgenept_go_all_gpt_avg']:
         embs_to_include = ['GO_token_embs_gpt_avg', 'scGPT_counts_embs', 'scGPT_token_embs']
     # using concatenation of gene annotation terms
-    elif args.model_type in ['scgptgo_c_gpt_concat', 
-                             'scgptgo_f_gpt_concat', 
-                             'scgptgo_p_gpt_concat', 
-                             'scgptgo_all_gpt_concat',]:
+    elif model_type in ['scgenept_go_c_gpt_concat', 
+                        'scgenept_go_f_gpt_concat', 
+                        'scgenept_go_p_gpt_concat', 
+                        'scgenept_go_all_gpt_concat']:
         embs_to_include = ['GO_token_embs_gpt_concat', 'scGPT_counts_embs', 'scGPT_token_embs']
     # scGPT token embeddings + scGPT counts embeddings + GenePT Gene embeddings + Gene Embeddings from GO Gene Ontology Annotations
-    elif args.model_type in ['scgenept_ncbi+uniprot_gpt_go_c_gpt_concat', 
-                             'scgenept_ncbi+uniprot_gpt_go_all_gpt_concat', 
-                             'scgenept_ncbi+uniprot_gpt_go_f_gpt_concat', 
-                             'scgenept_ncbi+uniprot_gpt_go_p_gpt_concat']:
+    elif model_type in ['scgenept_ncbi+uniprot_gpt_go_c_gpt_concat', 
+                        'scgenept_ncbi+uniprot_gpt_go_all_gpt_concat', 
+                        'scgenept_ncbi+uniprot_gpt_go_f_gpt_concat', 
+                        'scgenept_ncbi+uniprot_gpt_go_p_gpt_concat']:
         embs_to_include = ['scGPT_counts_embs', 'scGPT_token_embs', 'genePT_token_embs_gpt', 'GO_token_embs_gpt_concat']
     # scGPT counts embeddings + GenePT Gene embeddings 
-    elif args.model_type in ['scgenept_ncbi_gpt_scgpt_counts', 
-                             'scgenept_ncbi+uniprot_gpt_scgpt_counts']:
+    elif model_type in ['scgenept_ncbi_gpt_scgpt_counts', 
+                        'scgenept_ncbi+uniprot_gpt_scgpt_counts']:
         embs_to_include = ['scGPT_counts_embs', 'genePT_token_embs']
     # scGPT counts embeddings + Gene Embeddings from GO Gene Ontology Annotations
-    elif args.model_type in ['go_f_scgpt_counts', 
-                             'go_p_scgpt_counts', 
-                             'go_c_scgpt_counts', 
-                             'go_all_scgpt_counts']:
+    elif model_type in ['go_f_scgpt_counts', 
+                        'go_p_scgpt_counts', 
+                        'go_c_scgpt_counts', 
+                        'go_all_scgpt_counts']:
         embs_to_include = ['scGPT_counts_embs', 'GO_token_embs']
     # scGPT token embeddings + scGPT counts embeddings
-    elif args.model_type in ['scgpt']:
+    elif model_type in ['scgpt']:
         embs_to_include = ['scGPT_counts_embs', 'scGPT_token_embs']
     # scGPT counts embeddings
-    elif args.model_type in ['scgpt_counts']:
+    elif model_type in ['scgpt_counts']:
         embs_to_include = ['scGPT_counts_embs']
     # scGPT token embeddings
-    elif args.model_type in ['scgpt_tokens']:
+    elif model_type in ['scgpt_tokens']:
         embs_to_include = ['scGPT_tokens']
     return embs_to_include
 
 
-def match_genes_to_scgpt_vocab(pretrained_model_location, pert_data, logger, special_tokens, dataset):
+def match_genes_to_scgpt_vocab(pretrained_model_location, pert_data, logger, special_tokens):
     """
     Parses a pre-trained scGPT model vocab and matches genes in a given pert_data corresponding to dataloaders from
     a dataset
@@ -229,7 +230,7 @@ def initialize_genept_embeddings(embs_to_include, genes, vocab, model_type, pret
         embeds = []
         emb_info_type = None
         embed_dim = None
-        found_genes = []
+        mapped_genes = []
     return embeds, emb_info_type, embed_dim, mapped_genes
 
 

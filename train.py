@@ -1,5 +1,5 @@
 from utils.data_loading import *
-# from utils.evaluation import *
+from utils.evaluation import *
 from utils.scgpt_config import *
 
 from models.scGenePT import *
@@ -196,7 +196,7 @@ if __name__ == "__main__":
     pert_data = load_dataloader(args.dataset, args.batch_size, args.eval_batch_size, split = 'simulation')
     
     # Get the embedding types to include in the model training 
-    embs_to_include = get_embs_to_include(args)
+    embs_to_include = get_embs_to_include(args.model_type)
     
     # Get gene vocab and IDs
     vocab, gene_ids, dataset_genes, gene2idx = match_genes_to_scgpt_vocab(scgpt_pretrained_model_location, pert_data, logger, SPECIAL_TOKENS, dataset_name)
@@ -258,6 +258,6 @@ if __name__ == "__main__":
     
     # Evaluate best model on test data  
     print(f"Evaluating best model on test data:")
-    test_metrics = compute_test_metrics(pert_data, best_model, 'test', save_dir, device, INCLUDE_ZERO_GENE, gene_ids, logger, dataset_name, num_extra_genes, gene2idx)
+    test_metrics = compute_test_metrics(pert_data, best_model, 'test', device, INCLUDE_ZERO_GENE, gene_ids, dataset_name, num_extra_genes, gene2idx, save_dir)
     with open(save_dir / "metrics/test/test_metrics_detailed.json", "w") as outfile:
         outfile.write(json.dumps(test_metrics))

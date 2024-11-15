@@ -151,8 +151,18 @@ class scGenePT(nn.Module):
                                                 genept_embs_size=genept_emb_size, proj_layer = proj_layer)
         # GO Annotations gene token encoder
         if 'GO_token_embs_gpt_concat' in self.embs_to_include or 'GO_token_embs_gpt_avg' in self.embs_to_include:
-            self.go_encoder = GOPTEncoder(ntoken, d_model, padding_idx=vocab[pad_token], 
-                                          gopt_lookup_embed=go_embs_to_include[go_embed_type], gopt_embs_size=go_emb_size)
+            if go_emb_type == 'c':
+                self.gopt_encoder_c = GOPTEncoder(ntoken, d_model, padding_idx=vocab[pad_token], 
+                                          gopt_lookup_embed=go_embs_to_include[go_emb_type], gopt_embs_size=go_emb_size)
+            elif go_emb_type == 'f':
+                self.gopt_encoder_f = GOPTEncoder(ntoken, d_model, padding_idx=vocab[pad_token], 
+                                          gopt_lookup_embed=go_embs_to_include[go_emb_type], gopt_embs_size=go_emb_size)
+            elif go_emb_type == 'p':
+                self.gopt_encoder_p = GOPTEncoder(ntoken, d_model, padding_idx=vocab[pad_token], 
+                                          gopt_lookup_embed=go_embs_to_include[go_emb_type], gopt_embs_size=go_emb_size)
+            elif go_emb_type == 'all':
+                self.gopt_encoder_f = GOPTEncoder(ntoken, d_model, padding_idx=vocab[pad_token], 
+                                          gopt_lookup_embed=go_embs_to_include[go_emb_type], gopt_embs_size=go_emb_size)
         # Perturbation flags encoder 
         self.pert_encoder = nn.Embedding(n_perturbagens + 1, d_model, padding_idx=pert_pad_id)
 
@@ -232,7 +242,14 @@ class scGenePT(nn.Module):
             embs2values['genePT_token_embs'] = src_genept
         # Encode the gene tokens using the GO embeddings encoder
         if 'GO_token_embs_gpt_avg' in self.embs_to_include or  'GO_token_embs_gpt_concat' in self.embs_to_include:
-            src_go_embs = self.go_encoder(src)
+            if self.go_emb_type == 'c':
+                src_go_embs = self.gopt_encoder_c(src)
+            elif self.go_emb_type == 'p':
+                src_go_embs = self.gopt_encoder_p(src)
+            elif self.go_emb_type == 'f':
+                src_go_embs = self.gopt_encoder_f(src)
+            elif self.go_emb_type == 'all':
+                src_go_embs = self.gopt_encoder_f(src)
             embs2values['GO_token_embs_' + self.go_emb_type] = src_go_embs
         
         # Encode the perturbation flags
@@ -374,6 +391,74 @@ class scGenePT(nn.Module):
                 output = output.cpu()
             outputs.append(output)
         return torch.cat(outputs, dim=0)
+    
+    def pred_perturb_from_ctrl(
+        self,
+        adata_ctrl,
+        perturbation,
+        gene_names,
+        device,
+        gene_ids=None,
+        amp=True,
+        pool_size = None, 
+        return_mean = True
+    ) -> Tensor:
+        """
+        Perturbation prediction from a control sample
+        
+        Args:
+            adata_ctrl: adata control sample to predict from
+            perturbation: perturbation type, in str form; eg 'FOSB+ctrl', 'SAMD1+ZBTB1'
+            gene_names: list of gene names in the dataset the model has been trained on
+            include_zero_gene: True if to include zero genes
+            gene_ids: gene_ids to predict for 
+            pool_size: number of control samples to predict for; if None, predicts over all; otherwise, samples randomly for pool_size
+            return_mean: if True, returns mean of prediction over control samples; else returns a list of all predictions
+
+        Returns:
+            output Tensor of shape [N, seq_len]
+        """
+        self.eval()
+        gene_ids = torch.tensor(gene_ids).long().unsqueeze(0).to(device)
+
+        if pool_size == None:
+            pool_size = len(adata_ctrl)
+
+        ctrls = np.array(adata_ctrl[np.random.randint(0, len(adata_ctrl), pool_size)].X.toarray())
+        src_key_padding_mask = torch.zeros_like(
+            gene_ids, dtype=torch.bool, device=device
+        )
+
+        all_pred_gene_values = []
+        for ori_gene_values in ctrls:
+            pert_flags = np.zeros(len(ori_gene_values))
+
+            if perturbation != 'ctrl':
+                for x in perturbation.split('+'):
+                    if x != 'ctrl':
+                        pert_flags[gene_names.index(x)] = 1
+            pert_flags = torch.from_numpy(pert_flags).long().to(device).unsqueeze(0)
+            ori_gene_values = torch.from_numpy(np.expand_dims(ori_gene_values, 0)).to(dtype = torch.float32).to(device)
+            # model = model.to(torch.float32)
+            with torch.cuda.amp.autocast(enabled=amp):
+                with torch.no_grad():
+                    output_dict = self(
+                        gene_ids,
+                        ori_gene_values,
+                        pert_flags,
+                        src_key_padding_mask=src_key_padding_mask,
+                        CLS=False,
+                        CCE=False,
+                        MVC=False,
+                        ECS=False,
+                        do_sample=True,
+                    )
+                pred_gene_values = output_dict["mlm_output"].float().detach().cpu().numpy()
+                all_pred_gene_values.append(pred_gene_values)
+        if return_mean:
+            return np.mean(all_pred_gene_values, axis = 0)
+        else:
+            return np.array(all_pred_gene_values)
     
     def pred_perturb(
         self,
