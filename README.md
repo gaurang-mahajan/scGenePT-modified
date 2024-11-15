@@ -65,6 +65,10 @@ argument | definition | default value
 **pretrained-model-dir** | directory of where the saved pretrained model directories are in | models/pretrained/
 **outputs-dir** | directory where model outputs and metrics are saved | outputs/ 
 
+## Tutorials
+
+- [scgenept_tutorial](https://colab.research.google.com/drive/12Lg_dNy55-ii69hsfc3_bLJeVS1eNsDB) - Notebook showcasing how to use trained scGenePT models in inference mode for perturbation prediction. It uses models fine-tuned on the Norman dataset and offers examples of predicting post-perturbation expression responses for single and two-gene perturbations.
+
 ## Cite Us
 If you use scGenePT in your analyses, please cite us:
 
