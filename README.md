@@ -65,7 +65,7 @@ The training arguments are the following:
 
 argument | definition | default value
 --- | --- | --- 
-**model-type** | type of model to train | scgenept_ncbi_gpt 
+**model-type** | type of model to train; see info in data_loading.py for all model variations| scgenept_ncbi_gpt 
 **num-epochs** | number of epochs to train the model for | 20 
 **batch-size** | train batch_size | 64
 **eval-batch-size** | validation batch_size | 64
@@ -81,12 +81,58 @@ argument | definition | default value
 **pretrained-model-dir** | directory of where the saved pretrained model directories are in | models/pretrained/
 **outputs-dir** | directory where model outputs and metrics are saved | outputs/ 
 
+For **model_type** the following options are possible:
+**scGPT + NCBI Gene Card/NCBI Gene Card + UniProt Protein Summaries**
+- scgenept_ncbi_gpt
+- scgenept_ncbi+uniprot_gpt
+
+**scGPT + GO Gene Annotations**  
+- scgenept_go_f_gpt
+- scgenept_go_c_gpt
+- scgenept_go_p_gpt
+- scgenept_go_all_gpt
+
+**Gene Annotations**
+- genept_ncbi_gpt
+- genept_ncbi+uniprot_gpt
+- go_f_gpt_concat
+- go_c_gpt_concat
+- go_p_gpt_concat
+- go_all_gpt_concat
+
+**scGPT + NCBI Gene Card/NCBI Gene Card + UniProt Protein Summaries + GO Gene Annotations**  
+- scgenept_ncbi+uniprot_gpt_go_c_gpt_concat
+- scgenept_ncbi+uniprot_gpt_go_f_gpt_concat
+- scgenept_ncbi+uniprot_gpt_go_p_gpt_concat
+- scgenept_ncbi+uniprot_gpt_go_all_gpt_concat
+- scgenept_ncbi+uniprot_gpt_go_c_gpt_concat
+
+**scGPT**
+- scgpt
+- scgpt_counts
+- scgpt_tokens
+
+For each of the model types, a suffix **_no_attention** can be added, which means that the model won't use scGPT pre-trained attention.
+
 ## Inference
 
 **Tutorials**
 
 - [scgenept_tutorial Google Colab](https://colab.research.google.com/drive/12Lg_dNy55-ii69hsfc3_bLJeVS1eNsDB) - Tutorial showcasing how to use trained scGenePT models in inference mode for perturbation prediction. It uses models fine-tuned on the Norman dataset and offers examples of predicting post-perturbation expression responses for single and two-gene perturbations.
 
+**Step 1**: The following files need to be downloaded beforehand:
+- **Download scGPT Pretrained Model** - the scGPT model needs to be under `models/pretrained/scgpt` 
+- **Download Gene Embeddings** - the gene embeddings files should be under `models/gene_embeddings`. 
+- **Download Trained scGenePT models from the scGenePT Model Zoo** - they should be under `models/finetuned`
+
+**Step 2**: The environment needs to be setup properly:
+```
+conda create -y --name scgenept python=3.10
+source activate scgenept
+pip install -r requirements.txt
+pip install flash-attn --no-build-isolation
+pip install scgpt==0.2.1
+```
 
 ## scGenePT Model Zoo
 Trained scGenePT Models can be downloaded from this Google Drive [link](https://drive.google.com/drive/folders/1U9PodoV7A-Dkk-GemmLB_AzmkgE-owp_?usp=drive_link)
