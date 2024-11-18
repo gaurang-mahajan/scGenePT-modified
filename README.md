@@ -91,7 +91,7 @@ Trained scGenePT Models can be downloaded from this Google Drive [link](https://
 
 Model | Description | Download link 
 --- | --- | ---
-scgenept_ncbi | scGPT + NCBI Gene Card Summaries <br> - best_model_gpt3.5_ada_rnd_seed_42.pt| [link](https://drive.google.com/drive/folders/1AKLLWylPplFMZiaPiNJJejiB5Vt6gv9d?usp=drive_link) 
+scgenept_ncbi | scGPT + NCBI Gene Card Summaries | [link](https://drive.google.com/drive/folders/1AKLLWylPplFMZiaPiNJJejiB5Vt6gv9d?usp=drive_link) 
 scgenept_ncbi+uniprot | scGPT + NCBI Gene Card Summaries + UniProt Protein Summaries | [link](https://drive.google.com/drive/folders/1r5awtb1rrYUlRzKwoDU7fsF8jQ_cLx6O?usp=drive_link)
 scgenept_go_c | scGPT + GO Cellular Components Annotations | [link](https://drive.google.com/drive/folders/18e0RpI3umdAiQyqcSZOHRFLq-ajuTX-O?usp=drive_link)
 scgenept_go_f | scGPT + GO Molecular Functions Annotations | [link](https://drive.google.com/drive/folders/1ewuCsKPHjx0Dyek3lex3LosLl6dGYy7B?usp=drive_link)
