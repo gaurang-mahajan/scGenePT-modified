@@ -38,7 +38,7 @@ conda create -y --name scgenept python=3.10
 source activate scgenept
 pip install -r requirements.txt
 pip install flash-attn --no-build-isolation
-pip install scgpt==0.2.1
+pip install scgpt "flash-attn<1.0.5"
 ```
 
 ### Step 3: Train a model <br>
@@ -131,7 +131,7 @@ conda create -y --name scgenept python=3.10
 source activate scgenept
 pip install -r requirements.txt
 pip install flash-attn --no-build-isolation
-pip install scgpt==0.2.1
+pip install scgpt "flash-attn<1.0.5"
 ```
 
 ## scGenePT Model Zoo
