@@ -8,7 +8,7 @@ scGenePT is a collection of single-cell models for perturbation prediction. It l
 ## Training 
 
 ### Step 1: Download pretrained models and pre-computed gene Embeddings <br>
-scGenePT uses a pre-trained scGPT model and pre-computed gene embeddings. The files need to be under `models/pretrained/`, as described below. All of the pretrained models, as well as the assumed folder structure for model training can be found under this **[Google Drive Link](https://drive.google.com/drive/folders/1mit6pwRaykC28WQOSdPP-gFNbzKKJE2_?usp=drive_link)**.
+scGenePT uses a pre-trained scGPT model and pre-computed gene embeddings. The files need to be under `models/pretrained/`, as described below. All of the trained models, as well as the assumed folder structure for model training can be found under this **[Google Drive Link](https://drive.google.com/drive/folders/12h1hL3cJF3W0VG92JqGJ1-4R-2nDXbzc?usp=drive_link)**.
 
 **Download scGPT Pretrained Model** <br>
 Pretrained model | Download link | Should be under
@@ -37,6 +37,8 @@ We highly recommend creating a virtual environment. Model output has not been te
 conda create -y --name scgenept python=3.10
 source activate scgenept
 pip install -r requirements.txt
+pip install flash-attn --no-build-isolation
+pip install scgpt==0.2.1
 ```
 
 ### Step 3: Train a model <br>
