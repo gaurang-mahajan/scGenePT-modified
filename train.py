@@ -73,7 +73,7 @@ def get_args():
         '--num-epochs', 
         type=int, 
         help='number of epochs to train the model for', 
-        default = 1
+        default = 20
     )
     parser.add_argument(
         '--model-type', 
@@ -151,7 +151,7 @@ def get_args():
         '--pretrained-model-dir', 
         type=str, 
         help='directory of pretrained models are in', 
-        default = 'models/pretrained/'
+        default = 'models/'
     )
     parser.add_argument(
         '--outputs_dir', 
@@ -173,7 +173,7 @@ if __name__ == "__main__":
     amp = True
     
     # Location of pretrained scGPT model
-    scgpt_pretrained_model_location = args.pretrained_model_dir + 'scgpt'
+    scgpt_pretrained_model_location = args.pretrained_model_dir + 'pretrained/scgpt'
     
     # Location where the model outputs will be saved to 
     save_dir = Path(args.outputs_dir + dataset_name + "/" + model_type + "/seed_" + str(args.rnd_seed) + "/")
