@@ -37,6 +37,8 @@ We highly recommend creating a virtual environment. Model output has not been te
 conda create -y --name scgenept python=3.10
 source activate scgenept
 pip install -r requirements.txt
+pip install flash-attn --no-build-isolation
+pip install scgpt==0.2.1
 ```
 
 ### Step 3: Train a model <br>
