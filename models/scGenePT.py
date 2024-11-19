@@ -5,7 +5,6 @@
 import gc
 import pickle as pkl
 import matplotlib.pyplot as plt
-import plotly.express as px
 from utils.scgpt_config import *
 
 import json

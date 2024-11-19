@@ -256,7 +256,8 @@ if __name__ == "__main__":
     torch.save(best_model.state_dict(), save_dir / "models/best_model.pt")
     
     # Evaluate best model on test data  
-    print(f"Evaluating best model on test data:")
-    test_metrics = compute_test_metrics(pert_data, best_model, 'test', device, INCLUDE_ZERO_GENE, gene_ids, dataset_name, num_extra_genes, gene2idx, save_dir)
-    with open(save_dir / "metrics/test/test_metrics_detailed.json", "w") as outfile:
-        outfile.write(json.dumps(test_metrics))
+    # TO-DO: upload the code
+    # print(f"Evaluating best model on test data:")
+    # test_metrics = compute_test_metrics(pert_data, best_model, 'test', device, INCLUDE_ZERO_GENE, gene_ids, dataset_name, num_extra_genes, gene2idx, save_dir)
+    # with open(save_dir / "metrics/test/test_metrics_detailed.json", "w") as outfile:
+    #     outfile.write(json.dumps(test_metrics))
