@@ -30,6 +30,8 @@ GO Molecular Function Annotations| [CZI-Hosted Link](https://drive.google.com/fi
 GO Biological Processes Annotations| [CZI-Hosted Link](https://drive.google.com/file/d/1pVRUpth4U8zhi1mRUgF5-lNMOg4jM9FF/view?usp=drive_link)| `models/gene_embeddings/` <br> GO_P_gene_embeddings-gpt3.5-ada_concat.pickle **or** GO_P_gene_embeddings-gpt3.5-ada_avg.pickle
 Aggregation of GO-C + GO-F + GO-P| [CZI-Hosted Link](https://drive.google.com/file/d/1cQi6CtOEESXX9iVokwlcf_onVD3OmWNk/view?usp=drive_link)|  `models/gene_embeddings/` <br> GO_all_gene_embeddings-gpt3.5-ada_concat.pickle **or** GO_all_gene_embeddings-gpt3.5-ada_avg.pickle
 
+The **gene annotations** can be downloaded from [here](https://drive.google.com/drive/folders/191d8uXaoUNvvZ8DZHzlR1O6BK9vLnqqy?usp=drive_link).
+
 ### Step 2: Environment setup
 
 We highly recommend creating a virtual environment. Model output has not been tested outside of the packages below.
@@ -38,7 +40,7 @@ conda create -y --name scgenept python=3.10
 source activate scgenept
 pip install -r requirements.txt
 pip install flash-attn --no-build-isolation
-pip install scgpt==0.2.1
+pip install scgpt "flash-attn<1.0.5"
 ```
 
 ### Step 3: Train a model <br>
@@ -57,6 +59,8 @@ pert_data.get_dataloader(batch_size=batch_size, test_batch_size=val_batch_size)
 ```
 
 **Training Script** <br>
+
+⚠️ Note that training requires a GPU - it won't work on a cpu!
 Once the pre-trained scGPT model and pre-computed gene embeddings have been downloaded under `models/pretrained/`, as described above, scGenePT can be trained using: 
 
 `python train.py --model-type=scgenept_ncbi+uniprot_gpt --num-epochs=20 --dataset=norman --device=cuda:0 --rnd-seed=42`
@@ -118,7 +122,9 @@ For each of the model types, a suffix **_no_attention** can be added, which mean
 
 **Tutorials**
 
-- [scgenept_tutorial Google Colab](https://colab.research.google.com/drive/12Lg_dNy55-ii69hsfc3_bLJeVS1eNsDB) - Tutorial showcasing how to use trained scGenePT models in inference mode for perturbation prediction. It uses models fine-tuned on the Norman dataset and offers examples of predicting post-perturbation expression responses for single and two-gene perturbations.
+- [scgenept_tutorial](https://github.com/czi-ai/scGenePT/blob/main/tutorials/scgenept_tutorial.ipynb) - Tutorial showcasing how to use trained scGenePT models in inference mode for perturbation prediction. It uses models fine-tuned on the Norman dataset and offers examples of predicting post-perturbation expression responses for single and two-gene perturbations.
+
+Same tutorial can be found as a Google Collab notebook [here](https://colab.research.google.com/drive/12Lg_dNy55-ii69hsfc3_bLJeVS1eNsDB)
 
 **Step 1**: The following files need to be downloaded beforehand:
 - **Download scGPT Pretrained Model** - the scGPT model needs to be under `models/pretrained/scgpt` 
@@ -131,8 +137,17 @@ conda create -y --name scgenept python=3.10
 source activate scgenept
 pip install -r requirements.txt
 pip install flash-attn --no-build-isolation
-pip install scgpt==0.2.1
+pip install scgpt "flash-attn<1.0.5"
 ```
+
+The jupyter notebook needs to be able to see the venv:
+```
+pip install ipykernel
+python -m ipykernel install --user --name=scgenept
+```
+
+Then launch the notebook from inside **tutorials**:
+```jupyter notebook```
 
 ## scGenePT Model Zoo
 Trained scGenePT Models can be downloaded from this Google Drive [link](https://drive.google.com/drive/folders/1U9PodoV7A-Dkk-GemmLB_AzmkgE-owp_?usp=drive_link)
@@ -162,6 +177,12 @@ If you use scGenePT in your analyses, please cite us:
   publisher={Cold Spring Harbor Laboratory}
 }
 ```
+
+## Acknowledgements
+
+We would like to sincerely thank the authors of the following models and packages:
+- [scGPT](https://github.com/bowang-lab/scGPT)
+- [GenePT](https://github.com/yiqunchen/GenePT)
 
 ## References
 1. Cui, Haotian, et al. "scGPT: toward building a foundation model for single-cell multi-omics using generative AI." Nature Methods (2024): 1-11. [Paper Link](https://www.nature.com/articles/s41592-024-02201-0) | [GitHub Repo](https://github.com/bowang-lab/scGPT) 
