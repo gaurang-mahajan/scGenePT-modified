@@ -57,6 +57,8 @@ pert_data.get_dataloader(batch_size=batch_size, test_batch_size=val_batch_size)
 ```
 
 **Training Script** <br>
+
+⚠️ Note that training requires a GPU - it won't work on a cpu!
 Once the pre-trained scGPT model and pre-computed gene embeddings have been downloaded under `models/pretrained/`, as described above, scGenePT can be trained using: 
 
 `python train.py --model-type=scgenept_ncbi+uniprot_gpt --num-epochs=20 --dataset=norman --device=cuda:0 --rnd-seed=42`
@@ -118,7 +120,9 @@ For each of the model types, a suffix **_no_attention** can be added, which mean
 
 **Tutorials**
 
-- [scgenept_tutorial Google Colab](https://colab.research.google.com/drive/12Lg_dNy55-ii69hsfc3_bLJeVS1eNsDB) - Tutorial showcasing how to use trained scGenePT models in inference mode for perturbation prediction. It uses models fine-tuned on the Norman dataset and offers examples of predicting post-perturbation expression responses for single and two-gene perturbations.
+- [scgenept_tutorial](https://github.com/czi-ai/scGenePT/blob/main/tutorials/scgenept_tutorial.ipynb) - Tutorial showcasing how to use trained scGenePT models in inference mode for perturbation prediction. It uses models fine-tuned on the Norman dataset and offers examples of predicting post-perturbation expression responses for single and two-gene perturbations.
+
+Same tutorial can be found as a Google Collab notebook [here](https://colab.research.google.com/drive/12Lg_dNy55-ii69hsfc3_bLJeVS1eNsDB)
 
 **Step 1**: The following files need to be downloaded beforehand:
 - **Download scGPT Pretrained Model** - the scGPT model needs to be under `models/pretrained/scgpt` 
@@ -133,6 +137,15 @@ pip install -r requirements.txt
 pip install flash-attn --no-build-isolation
 pip install scgpt "flash-attn<1.0.5"
 ```
+
+The jupyter notebook needs to be able to see the venv:
+```
+pip install ipykernel
+python -m ipykernel install --user --name=scgenept
+```
+
+Then launch the notebook from inside **tutorials**:
+```jupyter notebook```
 
 ## scGenePT Model Zoo
 Trained scGenePT Models can be downloaded from this Google Drive [link](https://drive.google.com/drive/folders/1U9PodoV7A-Dkk-GemmLB_AzmkgE-owp_?usp=drive_link)
