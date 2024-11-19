@@ -176,6 +176,12 @@ If you use scGenePT in your analyses, please cite us:
 }
 ```
 
+## Acknowledgements
+
+We would like to sincerely thank the authors of the following models and packages:
+- [scGPT](https://github.com/bowang-lab/scGPT)
+- [GenePT](https://github.com/yiqunchen/GenePT)
+
 ## References
 1. Cui, Haotian, et al. "scGPT: toward building a foundation model for single-cell multi-omics using generative AI." Nature Methods (2024): 1-11. [Paper Link](https://www.nature.com/articles/s41592-024-02201-0) | [GitHub Repo](https://github.com/bowang-lab/scGPT) 
 2. Chen, Yiqun, and James Zou. "GenePT: a simple but effective foundation model for genes and cells built from ChatGPT." bioRxiv (2024): 2023-10. [Paper Link](https://pmc.ncbi.nlm.nih.gov/articles/PMC10614824/) |  [GitHub Repo](https://github.com/yiqunchen/GenePT) 
