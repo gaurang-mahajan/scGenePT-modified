@@ -102,7 +102,7 @@ def get_embs_to_include(model_type):
     return embs_to_include
 
 
-def match_genes_to_scgpt_vocab(pretrained_model_location, pert_data, logger, special_tokens):
+def match_genes_to_scgpt_vocab(vocab_file, pert_data, logger, special_tokens):
     """
     Parses a pre-trained scGPT model vocab and matches genes in a given pert_data corresponding to dataloaders from
     a dataset
@@ -121,11 +121,6 @@ def match_genes_to_scgpt_vocab(pretrained_model_location, pert_data, logger, spe
         gene2idx: mapping from gene name to gene idx in vocab for genes in dataset
         
     """
-    model_dir = Path(pretrained_model_location)
-    model_config_file = model_dir / "args.json"
-    model_file = model_dir / "best_model.pt"
-    vocab_file = model_dir / "vocab.json"
-
     # initialize scGPT gene vocabulaty
     vocab = GeneVocab.from_file(vocab_file)
     for s in special_tokens:

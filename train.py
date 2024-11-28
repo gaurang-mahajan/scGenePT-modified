@@ -198,7 +198,8 @@ if __name__ == "__main__":
     embs_to_include = get_embs_to_include(args.model_type)
     
     # Get gene vocab and IDs
-    vocab, gene_ids, dataset_genes, gene2idx = match_genes_to_scgpt_vocab(scgpt_pretrained_model_location, pert_data, logger, SPECIAL_TOKENS)
+    vocab_file = Path(scgpt_pretrained_model_location) / "vocab.json"
+    vocab, gene_ids, dataset_genes, gene2idx = match_genes_to_scgpt_vocab(vocab_file, pert_data, logger, SPECIAL_TOKENS)
     ntokens = len(vocab)  # size of vocabulary
     
     # Get GenePT embeddings to include
