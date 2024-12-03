@@ -1,36 +1,36 @@
-# scGenePT: Is language all you need for modeling single-cell perturbations?
+# CZ scGenePT: Is language all you need for modeling single-cell perturbations?
 
 ## Model Description
-scGenePT is a collection of single-cell models for perturbation prediction. It leverages the [scGPT](https://github.com/bowang-lab/scGPT) [1] foundation model for scRNAseq data by injecting language embeddings at the gene level into the model architecture. The language gene embeddings are obtained by embedding gene level information from different knowledge sources using LLMs. The knowledge sources used include NCBI gene descriptions, UniProt protein Summaries for protein coding genes - as inspired by the [genePT](https://github.com/yiqunchen/GenePT) [2] approach - and GO (Gene Ontology) Gene Molecular Annotations, across three different axes: Molecular Function, Biological Process and Cellular Component
+CZ scGenePT is a collection of single-cell models for perturbation prediction. It leverages the [scGPT](https://github.com/bowang-lab/scGPT) [1] foundation model for scRNAseq data by injecting language embeddings at the gene level into the model architecture. The language gene embeddings are obtained by embedding gene level information from different knowledge sources using LLMs. The knowledge sources used include NCBI gene descriptions, UniProt protein Summaries for protein coding genes - as inspired by the [genePT](https://github.com/yiqunchen/GenePT) [2] approach - and GO (Gene Ontology) Gene Molecular Annotations, across three different axes: Molecular Function, Biological Process and Cellular Component
 
 ![Example of gene representations for FOSB gene](FOSB_gene_example.png)
 
 ## Training 
 
 ### Step 1: Download pretrained models and pre-computed gene Embeddings <br>
-scGenePT uses a pre-trained scGPT model and pre-computed gene embeddings. The files need to be under `models/pretrained/`, as described below. All of the trained models, as well as the assumed folder structure for model training can be found under this **[Google Drive Link](https://drive.google.com/drive/folders/12h1hL3cJF3W0VG92JqGJ1-4R-2nDXbzc?usp=drive_link)**.
+scGenePT uses a pre-trained scGPT model and pre-computed gene embeddings. The files need to be under `models/pretrained/`, as described below. All of the trained models, as well as the assumed folder structure for model training can be found under this **[Google Drive Link]()**.
 
 **Download scGPT Pretrained Model** <br>
 Pretrained model | Download link | Should be under
 ---- | --- | --- 
-scGPT Model weights (whole-human) | [scGPT Google Drive Link](https://drive.google.com/drive/folders/1oWh_-ZRdhtoGQ2Fw24HP41FgLoomVo-y) <br> [CZI-Hosted Link](https://drive.google.com/drive/folders/1lNvQQpmHDSizEzbnKtBEheXT48OawqMc?usp=drive_link) | `models/pretrained/scgpt/` <br> - best_model.pt <br> - args.json <br> - vocab.json|
+scGPT Model weights (whole-human) | [scGPT Google Drive Link]() <br> [CZI-Hosted Link]() | `models/pretrained/scgpt/` <br> - best_model.pt <br> - args.json <br> - vocab.json|
 
 
 **Download Gene Embeddings** <br>
 scGenePT can use multiple sources for textual gene annotations. The different sources and gene representations are described below, together with the download links. If you're only interested in using one type of gene embeddings, you only need to download those embeddings only. 
 
-**All gene embeddings can be found under [this link](https://drive.google.com/drive/folders/191d8uXaoUNvvZ8DZHzlR1O6BK9vLnqqy?usp=drive_link).**
+**All gene embeddings can be found under [this link]().**
 
 Gene Embedding | Download link | Should be under 
 ---- | ---- | --- |
-NCBI Gene summaries | [GenePT zenodo Link](https://zenodo.org/records/10833191) <br> [CZI-Hosted Link](https://drive.google.com/file/d/1wx-CFeqp5xFdynJrmUX6a73xxxfdZ0U4/view?usp=drive_link) | `models/gene_embeddings/` <br> NCBI_gene_embeddings-gpt3.5-ada.pickle
-NCBI Gene summaries + UniProt protein summaries| [CZI-Hosted Link](https://drive.google.com/file/d/1EyuQwY8B3DU3W2VBuiBSoJiJw7KHntu4/view?usp=drive_link)| `models/gene_embeddings/` <br> NCBI+UniProt_embeddings-gpt3.5-ada.pkl
-GO Cellular Components Annotations| [CZI-Hosted Link](https://drive.google.com/file/d/1oGnxs56GqGQA5gaocg4uPf_UwtomJ0Tp/view?usp=drive_link)|`models/gene_embeddings/` <br> GO_C_gene_embeddings-gpt3.5-ada_concat.pickle **or** GO_C_gene_embeddings-gpt3.5-ada_avg.pickle
-GO Molecular Function Annotations| [CZI-Hosted Link](https://drive.google.com/file/d/1ZGhHabXSg6eGkSCCMKf6o2-HvHIKpp3s/view?usp=drive_link) |`models/gene_embeddings/` <br> GO_F_gene_embeddings-gpt3.5-ada_concat.pickle **or** GO_F_gene_embeddings-gpt3.5-ada_avg.pickle
-GO Biological Processes Annotations| [CZI-Hosted Link](https://drive.google.com/file/d/1pVRUpth4U8zhi1mRUgF5-lNMOg4jM9FF/view?usp=drive_link)| `models/gene_embeddings/` <br> GO_P_gene_embeddings-gpt3.5-ada_concat.pickle **or** GO_P_gene_embeddings-gpt3.5-ada_avg.pickle
-Aggregation of GO-C + GO-F + GO-P| [CZI-Hosted Link](https://drive.google.com/file/d/1cQi6CtOEESXX9iVokwlcf_onVD3OmWNk/view?usp=drive_link)|  `models/gene_embeddings/` <br> GO_all_gene_embeddings-gpt3.5-ada_concat.pickle **or** GO_all_gene_embeddings-gpt3.5-ada_avg.pickle
+NCBI Gene summaries | [GenePT zenodo Link](https://zenodo.org/records/10833191) <br> [CZI-Hosted Link]() | `models/gene_embeddings/` <br> NCBI_gene_embeddings-gpt3.5-ada.pickle
+NCBI Gene summaries + UniProt protein summaries| [CZI-Hosted Link]()| `models/gene_embeddings/` <br> NCBI+UniProt_embeddings-gpt3.5-ada.pkl
+GO Cellular Components Annotations| [CZI-Hosted Link]()|`models/gene_embeddings/` <br> GO_C_gene_embeddings-gpt3.5-ada_concat.pickle **or** GO_C_gene_embeddings-gpt3.5-ada_avg.pickle
+GO Molecular Function Annotations| [CZI-Hosted Link]() |`models/gene_embeddings/` <br> GO_F_gene_embeddings-gpt3.5-ada_concat.pickle **or** GO_F_gene_embeddings-gpt3.5-ada_avg.pickle
+GO Biological Processes Annotations| [CZI-Hosted Link]()| `models/gene_embeddings/` <br> GO_P_gene_embeddings-gpt3.5-ada_concat.pickle **or** GO_P_gene_embeddings-gpt3.5-ada_avg.pickle
+Aggregation of GO-C + GO-F + GO-P| [CZI-Hosted Link]()|  `models/gene_embeddings/` <br> GO_all_gene_embeddings-gpt3.5-ada_concat.pickle **or** GO_all_gene_embeddings-gpt3.5-ada_avg.pickle
 
-The **gene annotations** can be downloaded from [here](https://drive.google.com/drive/folders/191d8uXaoUNvvZ8DZHzlR1O6BK9vLnqqy?usp=drive_link).
+The **gene annotations** can be downloaded from [here]().
 
 ### Step 2: Environment setup
 
@@ -124,7 +124,7 @@ For each of the model types, a suffix **_no_attention** can be added, which mean
 
 - [scgenept_tutorial](https://github.com/czi-ai/scGenePT/blob/main/tutorials/scgenept_tutorial.ipynb) - Tutorial showcasing how to use trained scGenePT models in inference mode for perturbation prediction. It uses models fine-tuned on the Norman dataset and offers examples of predicting post-perturbation expression responses for single and two-gene perturbations.
 
-Same tutorial can be found as a Google Collab notebook [here](https://colab.research.google.com/drive/12Lg_dNy55-ii69hsfc3_bLJeVS1eNsDB)
+Same tutorial can be found as a Google Collab notebook [here]()
 
 **Step 1**: The following files need to be downloaded beforehand:
 - **Download scGPT Pretrained Model** - the scGPT model needs to be under `models/pretrained/scgpt` 
@@ -150,17 +150,17 @@ Then launch the notebook from inside **tutorials**:
 ```jupyter notebook```
 
 ## scGenePT Model Zoo
-Trained scGenePT Models can be downloaded from this Google Drive [link](https://drive.google.com/drive/folders/1U9PodoV7A-Dkk-GemmLB_AzmkgE-owp_?usp=drive_link)
+Trained scGenePT Models can be downloaded from this Google Drive [link]()
 
 Model | Description | Download link 
 --- | --- | ---
-scgenept_ncbi | scGPT + NCBI Gene Card Summaries | [link](https://drive.google.com/drive/folders/1AKLLWylPplFMZiaPiNJJejiB5Vt6gv9d?usp=drive_link) 
-scgenept_ncbi+uniprot | scGPT + NCBI Gene Card Summaries + UniProt Protein Summaries | [link](https://drive.google.com/drive/folders/1r5awtb1rrYUlRzKwoDU7fsF8jQ_cLx6O?usp=drive_link)
-scgenept_go_c | scGPT + GO Cellular Components Annotations | [link](https://drive.google.com/drive/folders/18e0RpI3umdAiQyqcSZOHRFLq-ajuTX-O?usp=drive_link)
-scgenept_go_f | scGPT + GO Molecular Functions Annotations | [link](https://drive.google.com/drive/folders/1ewuCsKPHjx0Dyek3lex3LosLl6dGYy7B?usp=drive_link)
-scgenept_go_p | scGPT + GO Biological Processes Annotations | [link](https://drive.google.com/drive/folders/1vdgOlZ3HzwqEf_s6mJN699yoqyOhNGwB?usp=drive_link)
-scgenept_go_all | scGPT + GO_F + GO_C + GO_P | [link](https://drive.google.com/drive/folders/1BNbNX-1KZE4BbIfiRyExWtWTgI-lQHDX?usp=drive_link)
-scgpt | scGPT | [link](https://drive.google.com/drive/folders/1rGtTDG7l5bbfIxLbSVr_mbQ0uZbXpTMe?usp=drive_link)
+scgenept_ncbi | scGPT + NCBI Gene Card Summaries | [link]() 
+scgenept_ncbi+uniprot | scGPT + NCBI Gene Card Summaries + UniProt Protein Summaries | [link]()
+scgenept_go_c | scGPT + GO Cellular Components Annotations | [link]()
+scgenept_go_f | scGPT + GO Molecular Functions Annotations | [link]()
+scgenept_go_p | scGPT + GO Biological Processes Annotations | [link]()
+scgenept_go_all | scGPT + GO_F + GO_C + GO_P | [link]()
+scgpt | scGPT | [link]()
 
 ## Cite Us
 If you use scGenePT in your analyses, please cite us:
