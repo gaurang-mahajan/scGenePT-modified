@@ -181,7 +181,7 @@ def match_genes_to_scgpt_vocab_from_adata(vocab_file, pert_adata, special_tokens
 
     # check which genes are in the scGPT gene vocabulary
     pert_adata.var["id_in_vocab"] = [
-        1 if gene in vocab else -1 for gene in pert_data.adata.var["gene_name"]
+        1 if gene in vocab else -1 for gene in pert_adata.var["gene_name"]
     ]
     gene_ids_in_vocab = np.array(pert_adata.var["id_in_vocab"])
     print(f"match {np.sum(gene_ids_in_vocab >= 0)}/{len(gene_ids_in_vocab)} genes "
