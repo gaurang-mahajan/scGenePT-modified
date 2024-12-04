@@ -155,6 +155,55 @@ def match_genes_to_scgpt_vocab(vocab_file, pert_data, logger, special_tokens):
         gene2idx[g] = i
     return vocab, dataset_gene_ids, dataset_genes, gene2idx
 
+
+def match_genes_to_scgpt_vocab_from_adata(vocab_file, pert_adata, special_tokens):
+    """
+    Parses a pre-trained scGPT model vocab and matches genes in a given anndata file 
+    Code initially retrieved and modified from: https://scgpt.readthedocs.io/en/latest/tutorial_perturbation.html
+    
+    Args:
+        pretrained_model_location: location of scGPT pretrained model
+        pert_adata: AnnData file containing training data to match
+        special_tokens: special tokens to add to the scGPT gene vocabulary; usually ["<pad", "<cls>", "<eoc>"]
+    
+    Returns:
+        vocab: scGPT vocab
+        dataset_gene_ids: vocab indices of genes in dataset
+        dataset_genes: gene names present in dataset
+        gene2idx: mapping from gene name to gene idx in vocab for genes in dataset
+        
+    """
+    # initialize scGPT gene vocabulaty
+    vocab = GeneVocab.from_file(vocab_file)
+    for s in special_tokens:
+        if s not in vocab:
+            vocab.append_token(s)
+
+    # check which genes are in the scGPT gene vocabulary
+    pert_adata.var["id_in_vocab"] = [
+        1 if gene in vocab else -1 for gene in pert_data.adata.var["gene_name"]
+    ]
+    gene_ids_in_vocab = np.array(pert_adata.var["id_in_vocab"])
+    print(f"match {np.sum(gene_ids_in_vocab >= 0)}/{len(gene_ids_in_vocab)} genes "
+            f"in vocabulary of size {len(vocab)}.")
+    
+    # all genes in the dataset
+    dataset_genes = pert_adata.var["gene_name"].tolist()
+    vocab.set_default_index(vocab["<pad>"])
+    
+    # vocab gene_ids for the genes in the dataset, matched to the scGPT pretrained vocab
+    dataset_gene_ids = np.array(
+        [vocab[gene] if gene in vocab else vocab["<pad>"] for gene in dataset_genes], dtype=int
+    )
+    
+    n_genes = len(dataset_genes)
+    
+    # mapping from gene 2 gene_idx in the PertData adata file
+    gene2idx = {}
+    for i, g in enumerate(dataset_genes):
+        gene2idx[g] = i
+    return vocab, dataset_gene_ids, dataset_genes, gene2idx
+
 def create_embs_w(genes, vocab, precomputed_embs_location, embed_dim, init_value = 0.1):
     """
     Creates an embedding matrix for a given list of genes, where each gene gets an embedding either from precomputed
