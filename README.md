@@ -20,7 +20,7 @@ The data can be accessed through the aws cli. In most cases, `pip install awscli
 ## scGenePT Model Zoo
 Trained scGenePT Models can be downloaded from this Google Drive [link]()
 
-Model | Description | Download link 
+Model | Description | Download link <br> aws s3 sync --no-sign-request [...]
 --- | --- | ---
 scgenept_ncbi | scGPT + NCBI Gene Card Summaries | s3://czi-scgenept-public/models/finetuned/scgenept_ncbi
 scgenept_ncbi+uniprot | scGPT + NCBI Gene Card Summaries + UniProt Protein Summaries | s3://czi-scgenept-public/models/finetuned/scgenept_ncbi+uniprot
@@ -40,7 +40,7 @@ scGPT Model weights (whole-human) | [scGPT Google Drive Link]() <br> s3://czi-sc
 All gene embeddings can be found under `s3://czi-scgenept-public/gene_embeddings/`. You can download all of them at once using
  ```aws s3 sync --no-sign-request s3://czi-scgenept-public/models/gene_embeddings gene_embeddings```
 
-Gene Embedding | Download from | Should be under 
+Gene Embedding | Download from <br> aws s3 sync --no-sign-request[...] | Should be under 
 ---- | ---- | --- |
 NCBI Gene summaries | [GenePT zenodo Link](https://zenodo.org/records/10833191) <br> s3://czi-scgenept-public/gene_embeddings/ | `models/gene_embeddings/` <br> NCBI_gene_embeddings-gpt3.5-ada.pickle
 NCBI Gene summaries + UniProt protein summaries| s3://czi-scgenept-public/models/gene_embeddings/| `models/gene_embeddings/` <br> NCBI+UniProt_embeddings-gpt3.5-ada.pkl
