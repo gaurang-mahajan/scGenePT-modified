@@ -250,7 +250,8 @@ if __name__ == "__main__":
     scaler = torch.cuda.amp.GradScaler(enabled=amp)
     
     # Train model
-    best_model = train_model(model, pert_data, args.num_epochs, loss_fn, optimizer, scheduler, scaler, device, gene_ids, logger, INCLUDE_ZERO_GENE, amp, dataset_name, args.model_type, args.rnd_seed, args.max_seq_len, args.log_interval, args.early_stop, gene2idx, True, save_dir)
+    save_models_each_epoch = False
+    best_model = train_model(model, pert_data, args.num_epochs, loss_fn, optimizer, scheduler, scaler, device, gene_ids, logger, INCLUDE_ZERO_GENE, amp, dataset_name, args.model_type, args.rnd_seed, args.max_seq_len, args.log_interval, args.early_stop, gene2idx, save_models_each_epoch, save_dir)
     
     # Save best model under model output directory
     print(f"Saving best model under {save_dir}/models/best_model.pt")
