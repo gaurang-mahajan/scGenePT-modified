@@ -4,6 +4,8 @@ import numpy as np
 import pickle as pkl
 from scgpt.utils import load_pretrained
 import torch
+from utils.scgpt_config import *
+from models.scGenePT import *
 
 # Dimension of GPT-3.5 ada embeddings
 GPT_ADA_002_EMBED_DIM = 1536
@@ -336,6 +338,53 @@ def load_pretrained_model(model, load_param_prefixs, verbose, model_file, device
     model = load_pretrained(model, torch.load(model_file, map_location=device), verbose=verbose, prefix=load_param_prefixs)
     return model
 
+def load_trained_scgenept_model(adata, model_type, models_dir, model_location, device, verbose = False):
+    embs_to_include = get_embs_to_include(model_type)
+    vocab_file = models_dir + 'pretrained/scgpt/vocab.json'
+    vocab, gene_ids, dataset_genes, gene2idx = match_genes_to_scgpt_vocab_from_adata(vocab_file, adata, SPECIAL_TOKENS)
+    ntokens = len(vocab)  # size of vocabulary
+    genept_embs, genept_emb_type, genept_emb_dim, found_genes_genept = initialize_genept_embeddings(embs_to_include, dataset_genes, vocab, model_type, models_dir)
+    go_embs_to_include, go_emb_type, go_emb_dim, found_genes_go = initialize_go_embeddings(embs_to_include, dataset_genes, vocab, model_type, models_dir)
+
+    # we disable flash attention for inference for simplicity
+    use_fast_transformer = False
+
+    model = scGenePT(
+        ntoken=ntokens,
+        d_model=EMBSIZE,
+        nhead=NHEAD,
+        d_hid=D_HID,
+        nlayers=NLAYERS,
+        nlayers_cls=N_LAYERS_CLS,
+        n_cls=N_CLS,
+        vocab=vocab,
+        n_perturbagens=2,
+        dropout=0.0,
+        pad_token=PAD_TOKEN,
+        pad_value=PAD_VALUE,
+        pert_pad_id=PERT_PAD_ID,
+        use_fast_transformer=use_fast_transformer,
+        embs_to_include = embs_to_include,
+        genept_embs = genept_embs,
+        genept_emb_type = genept_emb_type,
+        genept_emb_size = genept_emb_dim,
+        go_embs_to_include = go_embs_to_include,
+        go_emb_type = go_emb_type,
+        go_emb_size = go_emb_dim
+    )
+
+    pretrained_params = torch.load(model_location, weights_only=True, map_location = device)
+    if not use_fast_transformer:
+        pretrained_params = {
+            k.replace("Wqkv.", "in_proj_"): v for k, v in pretrained_params.items()
+        }
+
+    model.load_state_dict(pretrained_params)
+
+    if verbose:
+        print(model)
+    model.to(device)
+    return model, gene_ids
 
 
 
