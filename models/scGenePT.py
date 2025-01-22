@@ -819,7 +819,7 @@ def train_model(model, pert_data, epochs, loss_fn,
                 optimizer, scheduler, scaler, device,
                 gene_ids, logger, include_zero_gene, amp, 
                 dataset_name, model_type, rnd_seed, 
-                max_seq_len, log_interval, gene2idx = {}, 
+                max_seq_len, log_interval, early_stop, gene2idx = {}, 
                 save_models_each_epoch = False, save_dir = "/tmp", loss_to_minimize = 'mse'):
     """
     Trains the model for a given number of epochs.

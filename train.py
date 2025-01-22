@@ -77,7 +77,7 @@ def get_args():
     parser.add_argument(
         '--model-type', 
         type=str, 
-        help='Type of model to train. One of: [scgpt, scgenept_ncbi_gpt, scgenept_ncbi+uniprot_gpt, scgptgo_c_gpt_concat, scgptgo_f_gpt_concat, scgptgo_p_gpt_concat, scgptgo_all_gpt_concat, genept_ncbi_gpt, genept_ncbi+uniprot_gpt, go_c_gpt_concat, go_f_gpt_concat, go_p_gpt_concat, go_all_gpt_concat ...]. For full list of possible models, please visit https://github.com/czi-ai/scGenePT.', 
+        help='Type of model to train. One of: [scgpt, scgenept_ncbi_gpt, scgenept_ncbi+uniprot_gpt, scgenept_go_c_gpt_concat, scgenept_go_f_gpt_concat, scgenept_go_p_gpt_concat, scgenept_go_all_gpt_concat, genept_ncbi_gpt, genept_ncbi+uniprot_gpt, go_c_gpt_concat, go_f_gpt_concat, go_p_gpt_concat, go_all_gpt_concat ...]. For full list of possible models, please visit https://github.com/czi-ai/scGenePT.', 
         default = "scgenept_ncbi_gpt"
     )
     parser.add_argument(
@@ -108,7 +108,7 @@ def get_args():
         '--rnd-seed', 
         type=int, 
         help='random seed', 
-        default = 42
+        default = 42 # we run models with rnd_seeds: 42, 23, 89, 30, 12
     )
     parser.add_argument(
         '--max-seq-len', 
@@ -250,15 +250,14 @@ if __name__ == "__main__":
     scaler = torch.cuda.amp.GradScaler(enabled=amp)
     
     # Train model
-    best_model = train_model(model, pert_data, args.num_epochs, loss_fn, optimizer, scheduler, scaler, device, gene_ids, logger, INCLUDE_ZERO_GENE, amp, dataset_name, args.model_type, args.rnd_seed, args.max_seq_len, args.log_interval, gene2idx, True, save_dir)
+    best_model = train_model(model, pert_data, args.num_epochs, loss_fn, optimizer, scheduler, scaler, device, gene_ids, logger, INCLUDE_ZERO_GENE, amp, dataset_name, args.model_type, args.rnd_seed, args.max_seq_len, args.log_interval, args.early_stop, gene2idx, True, save_dir)
     
     # Save best model under model output directory
     print(f"Saving best model under {save_dir}/models/best_model.pt")
     torch.save(best_model.state_dict(), save_dir / "models/best_model.pt")
     
     # Evaluate best model on test data  
-    # TO-DO: upload the code
-    # print(f"Evaluating best model on test data:")
-    # test_metrics = compute_test_metrics(pert_data, best_model, 'test', device, INCLUDE_ZERO_GENE, gene_ids, dataset_name, num_extra_genes, gene2idx, save_dir)
-    # with open(save_dir / "metrics/test/test_metrics_detailed.json", "w") as outfile:
-    #     outfile.write(json.dumps(test_metrics))
+    print(f"Evaluating best model on test data:")
+    test_metrics = compute_test_metrics(pert_data, model, 'test', save_dir, device, INCLUDE_ZERO_GENE, gene_ids)
+    with open(save_dir / "metrics/test/test_metrics_detailed.json", "w") as outfile:
+        outfile.write(json.dumps(test_metrics))
