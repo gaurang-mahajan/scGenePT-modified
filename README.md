@@ -9,7 +9,7 @@ conda create -y --name scgenept python=3.10 # or python3.10 -m venv scgenept
 source activate scgenept
 ```
 ```
-git clone https://github.com/czi-ai/scGenePT.git
+git clone https://github.com/gaurang-mahajan/scGenePT-modified.git
 cd scGenePT/
 ```
 ```
