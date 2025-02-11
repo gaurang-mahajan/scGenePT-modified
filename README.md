@@ -33,9 +33,12 @@ aws s3 sync --no-sign-request s3://czi-scgenept-public/models/gene_embeddings/ g
 
 Download KG gene embeddings:
 ```
+os.makedirs("gene_embeddings", exist_ok=True)
+
 url = "https://drive.google.com/file/d/1BODIRxWPk9J7G9kSkLXcP7l5gywMu27m/view?usp=sharing"
 output = "gene_embeddings/node2vec_gene_embeddings.pickle"
-gdown.download(url, output)
+
+gdown.download(url, output, fuzzy=True)
 ```
 
 ## :file_folder: Data
