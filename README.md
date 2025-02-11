@@ -35,7 +35,8 @@ Download KG gene embeddings:
 ```
 os.makedirs("gene_embeddings", exist_ok=True)
 
-url = "https://drive.google.com/file/d/1BODIRxWPk9J7G9kSkLXcP7l5gywMu27m/view?usp=sharing"
+url = "https://drive.google.com/file/d/15_UTN12KGMNPrKjKfVOWezdtsYsfCMrS/view?usp=sharing"  # KG with genome loc
+# url = "https://drive.google.com/file/d/1Yc74u843HTeLQJRSLjgKQAMN58DjXSMH/view?usp=sharing"  # KG excluding genome loc
 output = "gene_embeddings/node2vec_gene_embeddings.pickle"
 
 gdown.download(url, output, fuzzy=True)
