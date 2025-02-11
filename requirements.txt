@@ -5,3 +5,6 @@ torchmetrics==1.4.0.post0
 packaging==24.1
 numpy==1.26.4
 ipython==8.27.0
+setuptools
+scgpt
+ipykernel
