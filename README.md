@@ -14,10 +14,10 @@ cd scGenePT/
 ```
 ```
 pip install -r requirements.txt
-pip install setuptools
+#pip install setuptools
 #pip install flash-attn --no-build-isolation
 pip install scgpt #"flash-attn<1.0.5"
-pip install awscli
+#pip install awscli
 ```
 
 **To have same env in jupyter kernel:**
