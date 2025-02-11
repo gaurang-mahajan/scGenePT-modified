@@ -20,7 +20,8 @@ GENE_EMBED_TYPE2LOCATION = {'ncbi_gpt' : 'gene_embeddings/NCBI_gene_embeddings-g
                            'go_c_gpt_avg': 'gene_embeddings/GO_C_gene_embeddings-gpt3.5-ada-avg.pickle', 
                            'go_p_gpt_avg': 'gene_embeddings/GO_P_gene_embedding-gpt3.5-ada-avg.pickle', 
                            'go_f_gpt_avg': 'gene_embeddings/GO_F_gene_embeddings-gpt3.5-ada-avg.pickle',
-                           'go_all_gpt_avg': 'gene_embeddings/GO_all_gene_embeddings-gpt3.5-ada-avg.pickle'}
+                           'go_all_gpt_avg': 'gene_embeddings/GO_all_gene_embeddings-gpt3.5-ada-avg.pickle',
+                           'kg_node2vec': 'gene_embeddings/node2vec_gene_embeddings.pickle'}
 
 def get_embs_to_include(model_type):
     """
@@ -101,6 +102,11 @@ def get_embs_to_include(model_type):
     # scGPT token embeddings
     elif model_type in ['scgpt_tokens']:
         embs_to_include = ['scGPT_tokens']
+
+    # KG gene node2vec embeddings option
+    elif model_type in ['scgpt_node2vec']:
+        embs_to_include = ['scGPT_counts_embs', 'scGPT_token_embs', 'n2v_token_embeddings']
+
     return embs_to_include
 
 
@@ -280,6 +286,43 @@ def initialize_genept_embeddings(embs_to_include, genes, vocab, model_type, pret
     return embeds, emb_info_type, embed_dim, mapped_genes
 
 
+def initialize_n2v_embeddings(embs_to_include, genes, vocab, model_type, pretrained_model_dir):
+    """
+    Initializes KG node2vec embeddings for a given set of genes, given that node2vec embs should be included in the 
+    list of gene representations.
+    
+    Args:
+        embs_to_include: list containing types of embeddings to include for gene representations
+        genes: set of genes to map to node2vec embeddings
+        vocab: scGPT vocabulary
+        model_type: model-type; determines the embeddings that get initialized; only option is 'scgpt_node2vec'
+        
+    Returns:
+        embeds: created embeddings
+        emb_info_type: 'KG'
+        embed_dim: dimension of embedding
+        mapped_genes: list of mapped genes
+    """
+    if 'n2v_token_embeddings' in embs_to_include:
+        emb_info_type = 'KG'
+        emb_type = model_type.split('_')[1] # 'node2vec'
+        
+        print('Using', emb_info_type, 'embs, embedded with', emb_type)
+        
+        if emb_info_type == 'KG':
+                emb_model_type = 'kg_node2vec'   
+               
+        embed_dim = 512
+        embeddings_location = pretrained_model_dir + GENE_EMBED_TYPE2LOCATION[emb_model_type]
+        embeds, mapped_genes = create_embs_w(genes, vocab, embeddings_location, embed_dim)       
+    else:
+        embeds = []
+        emb_info_type = None
+        embed_dim = None
+        mapped_genes = []
+    return embeds, emb_info_type, embed_dim, mapped_genes
+
+
 def initialize_go_embeddings(embs_to_include, genes, vocab, model_type, pretrained_model_dir):
     """
     Initializes GO (Gene Ontology) Annotations embeddings for a given set of genes, given that GO embs should be included in the list of gene representations.
@@ -344,6 +387,7 @@ def load_trained_scgenept_model(adata, model_type, models_dir, model_location, d
     vocab, gene_ids, dataset_genes, gene2idx = match_genes_to_scgpt_vocab_from_adata(vocab_file, adata, SPECIAL_TOKENS)
     ntokens = len(vocab)  # size of vocabulary
     genept_embs, genept_emb_type, genept_emb_dim, found_genes_genept = initialize_genept_embeddings(embs_to_include, dataset_genes, vocab, model_type, models_dir)
+    n2v_embs, n2v_emb_type, n2v_emb_dim, found_genes_n2v = initialize_n2v_embeddings(embs_to_include, dataset_genes, vocab, model_type, models_dir)
     go_embs_to_include, go_emb_type, go_emb_dim, found_genes_go = initialize_go_embeddings(embs_to_include, dataset_genes, vocab, model_type, models_dir)
 
     # we disable flash attention for inference for simplicity
@@ -368,6 +412,9 @@ def load_trained_scgenept_model(adata, model_type, models_dir, model_location, d
         genept_embs = genept_embs,
         genept_emb_type = genept_emb_type,
         genept_emb_size = genept_emb_dim,
+        n2v_embs = n2v_embs,
+        n2v_emb_type = n2v_emb_type,
+        n2v_emb_size = n2v_emb_dim,
         go_embs_to_include = go_embs_to_include,
         go_emb_type = go_emb_type,
         go_emb_size = go_emb_dim
