@@ -8,6 +8,22 @@ scGenePT is a collection of single-cell models for perturbation prediction. It l
 conda create -y --name scgenept python=3.10 # or python3.10 -m venv scgenept
 source activate scgenept
 ```
+```
+git clone https://github.com/czi-ai/scGenePT.git
+cd scGenePT/
+```
+```
+pip install -r requirements.txt
+pip install setuptools
+#pip install flash-attn --no-build-isolation
+pip install scgpt #"flash-attn<1.0.5"
+pip install awscli
+```
+
+** To have same env in jupyter kernel:
+```
+python -m ipykernel install --user --name=scgenept --display-name "Python (scgenept)"
+```
 
 ## :file_folder: Data
 All of the data - including pre-computed gene_embeddings, as well as trained models, can be found in the public s3 bucket:
