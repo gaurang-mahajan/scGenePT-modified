@@ -3,7 +3,11 @@
 ## Model Description
 scGenePT is a collection of single-cell models for perturbation prediction. It leverages the [scGPT](https://github.com/bowang-lab/scGPT) [1] foundation model for scRNAseq data by injecting language embeddings at the gene level into the model architecture. The language gene embeddings are obtained by embedding gene level information from different knowledge sources using LLMs. The knowledge sources used include NCBI gene descriptions, UniProt protein Summaries for protein coding genes - as inspired by the [genePT](https://github.com/yiqunchen/GenePT) [2] approach - and GO (Gene Ontology) Gene Molecular Annotations, across three different axes: Molecular Function, Biological Process and Cellular Component
 
-
+## Adding KG node2vec option to the scGenePT code for evaluation
+```
+conda create -y --name scgenept python=3.10 # or python3.10 -m venv scgenept
+source activate scgenept
+```
 
 ## :file_folder: Data
 All of the data - including pre-computed gene_embeddings, as well as trained models, can be found in the public s3 bucket:
