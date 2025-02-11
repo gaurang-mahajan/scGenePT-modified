@@ -7,6 +7,7 @@ from gears.inference import compute_metrics, deeper_analysis, non_dropout_analys
 import json
 import matplotlib.pyplot as plt
 from gears.utils import create_cell_graph_dataset_for_prediction
+from tqdm import tqdm
 
 def compute_test_metrics(pert_data, best_model, loader_type, save_dir, device, include_zero_gene, gene_ids, epoch = 'best'):
     test_loader = pert_data.dataloader[loader_type + "_loader"]
@@ -79,7 +80,7 @@ def eval_perturb(
     logvar = []
 
     print(len(loader))
-    for itr, batch in enumerate(loader):
+    for itr, batch in tqdm(enumerate(loader)):
         batch.to(device)
         pert_cat.extend(batch.pert)
         with torch.no_grad():
