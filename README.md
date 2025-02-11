@@ -25,6 +25,12 @@ pip install awscli
 python -m ipykernel install --user --name=scgenept --display-name "Python (scgenept)"
 ```
 
+Downloading scGPT and scGenePT gene embeddings:
+```
+aws s3 sync --no-sign-request s3://czi-scgenept-public/models/pretrained/scgpt models/pretrained/scgpt
+aws s3 sync --no-sign-request s3://czi-scgenept-public/models/gene_embeddings/ gene_embeddings/
+```
+
 ## :file_folder: Data
 All of the data - including pre-computed gene_embeddings, as well as trained models, can be found in the public s3 bucket:
 ```
