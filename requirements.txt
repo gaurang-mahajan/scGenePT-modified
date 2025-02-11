@@ -8,3 +8,5 @@ ipython==8.27.0
 setuptools
 scgpt
 ipykernel
+awscli
+gdown
