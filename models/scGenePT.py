@@ -97,6 +97,9 @@ class scGenePT(nn.Module):
         genept_embs = None,
         genept_emb_type = None, 
         genept_emb_size = 1536,
+        n2v_embs = None,
+        n2v_emb_type = None,
+        n2v_emb_size = 512,
         go_embs_to_include = None,
         go_emb_type = None,
         go_emb_size = 1536,
@@ -148,6 +151,12 @@ class scGenePT(nn.Module):
         if 'genePT_token_embs_gpt' in self.embs_to_include:
             self.genept_encoder = GenePTEncoder(ntoken, d_model, padding_idx=vocab[pad_token], genept_lookup_embed=genept_embs, 
                                                 genept_embs_size=genept_emb_size, proj_layer = proj_layer)
+
+        # KG node2vec gene token encoder
+        if 'n2v_token_embeddings' in self.embs_to_include:
+            self.n2v_encoder = N2VEncoder(ntoken, d_model, padding_idx=vocab[pad_token], n2v_lookup_embed=n2v_embs, 
+                                                n2v_embs_size=n2v_emb_size, proj_layer = proj_layer)
+            
         # GO Annotations gene token encoder
         if 'GO_token_embs_gpt_concat' in self.embs_to_include or 'GO_token_embs_gpt_avg' in self.embs_to_include:
             if go_emb_type == 'c':
@@ -239,6 +248,10 @@ class scGenePT(nn.Module):
         if 'genePT_token_embs_gpt' in self.embs_to_include or 'genePT_token_embs_llama' in self.embs_to_include:
             src_genept = self.genept_encoder(src)  # (batch, seq_len, embsize)
             embs2values['genePT_token_embs'] = src_genept
+        # Encode the gene tokens using the node2vec encoder
+        if 'n2v_token_embeddings' in self.embs_to_include:
+            src_n2v = self.n2v_encoder(src)  # (batch, seq_len, embsize)
+            embs2values['n2v_token_embeddings'] = src_n2v
         # Encode the gene tokens using the GO embeddings encoder
         if 'GO_token_embs_gpt_avg' in self.embs_to_include or  'GO_token_embs_gpt_concat' in self.embs_to_include:
             if self.go_emb_type == 'c':
@@ -594,7 +607,42 @@ class GenePTEncoder(nn.Module):
         x = self.proj_layer(x)
         x = self.enc_norm(x)
         return x
-                
+
+class N2VEncoder(nn.Module):
+    def __init__(
+        self,
+        num_embeddings: int,
+        embedding_dim: int,
+        proj_layer = None,
+        padding_idx: Optional[int] = None,
+        n2v_lookup_embed: Optional = [],
+        n2v_embs_size = 512
+    ):
+        """
+        Encodes a gene token during training using KG node2vec precomputed representations. 
+        
+        Args: 
+            num_embeddings: number of genes
+            embedding_dim: dimension of the gene
+            padding_idx: padding_idx for the Embedding
+            n2v_lookup_embed: pre-trained embeddings used to initialize the Embedding layer
+            n2v_embs_size: size of the pre-trained embeddings
+        """
+        super().__init__()
+        self.embedding = nn.Embedding.from_pretrained(torch.from_numpy(n2v_lookup_embed), freeze = False, padding_idx=padding_idx)
+        self.enc_norm = nn.LayerNorm(n2v_embs_size)
+        if n2v_embs_size != embedding_dim:
+            self.proj_layer = nn.Linear(n2v_embs_size, embedding_dim)
+        else:
+            self.proj_layer = proj_layer
+        self.enc_norm = nn.LayerNorm(embedding_dim)
+       
+    def forward(self, x: Tensor) -> Tensor:
+        x = self.embedding(x).float()  # (batch, seq_len, embsize)
+        x = self.proj_layer(x)
+        x = self.enc_norm(x)
+        return x
+
 class GOPTEncoder(nn.Module):
     def __init__(
         self,
