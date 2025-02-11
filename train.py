@@ -1,5 +1,6 @@
 from utils.data_loading import *
 from utils.scgpt_config import *
+from utils.evaluation import *
 
 from models.scGenePT import *
 import argparse
@@ -9,6 +10,9 @@ import os
 from sklearn.model_selection import train_test_split
 from torch.utils.data import Dataset
 import pickle as pkl
+
+import torch
+torch.cuda.empty_cache()
 
 def set_seed(seed):
     """
@@ -77,7 +81,7 @@ def get_args():
     parser.add_argument(
         '--model-type', 
         type=str, 
-        help='Type of model to train. One of: [scgpt, scgenept_ncbi_gpt, scgenept_ncbi+uniprot_gpt, scgenept_go_c_gpt_concat, scgenept_go_f_gpt_concat, scgenept_go_p_gpt_concat, scgenept_go_all_gpt_concat, genept_ncbi_gpt, genept_ncbi+uniprot_gpt, go_c_gpt_concat, go_f_gpt_concat, go_p_gpt_concat, go_all_gpt_concat ...]. For full list of possible models, please visit https://github.com/czi-ai/scGenePT.', 
+        help='Type of model to train. One of: [scgpt, scgpt_node2vec, scgenept_ncbi_gpt, scgenept_ncbi+uniprot_gpt, scgenept_go_c_gpt_concat, scgenept_go_f_gpt_concat, scgenept_go_p_gpt_concat, scgenept_go_all_gpt_concat, genept_ncbi_gpt, genept_ncbi+uniprot_gpt, go_c_gpt_concat, go_f_gpt_concat, go_p_gpt_concat, go_all_gpt_concat ...]. For full list of possible models, please visit https://github.com/czi-ai/scGenePT.', 
         default = "scgenept_ncbi_gpt"
     )
     parser.add_argument(
@@ -204,6 +208,9 @@ if __name__ == "__main__":
     
     # Get GenePT embeddings to include
     genept_embs, genept_emb_type, genept_emb_dim, found_genes_genept = initialize_genept_embeddings(embs_to_include, dataset_genes, vocab, args.model_type, args.pretrained_model_dir)
+
+    # Get KG node2vec embeddings to include
+    n2v_embs, n2v_emb_type, n2v_emb_dim, found_genes_n2v = initialize_n2v_embeddings(embs_to_include, dataset_genes, vocab, args.model_type, args.pretrained_model_dir)
     
     # Get GO embeddings to include
     go_embs_to_include, go_emb_type, go_emb_dim, found_genes_go = initialize_go_embeddings(embs_to_include, dataset_genes, vocab, args.model_type, args.pretrained_model_dir)
@@ -227,6 +234,9 @@ if __name__ == "__main__":
         genept_embs = genept_embs, 
         genept_emb_type = genept_emb_type, 
         genept_emb_size = genept_emb_dim,
+        n2v_embs = n2v_embs,
+        n2v_emb_type = n2v_emb_type,
+        n2v_emb_size = n2v_emb_dim,
         go_embs_to_include = go_embs_to_include,
         go_emb_type = go_emb_type,
         go_emb_size = go_emb_dim
