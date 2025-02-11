@@ -20,7 +20,7 @@ pip install scgpt #"flash-attn<1.0.5"
 pip install awscli
 ```
 
-** To have same env in jupyter kernel:
+**To have same env in jupyter kernel:**
 ```
 python -m ipykernel install --user --name=scgenept --display-name "Python (scgenept)"
 ```
