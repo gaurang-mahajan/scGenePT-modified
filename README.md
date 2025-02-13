@@ -5,7 +5,7 @@ source activate scgenept
 ```
 ```
 git clone https://github.com/gaurang-mahajan/scGenePT-modified.git
-cd scGenePT/
+cd scGenePT-modified/
 ```
 ```
 pip install -r requirements.txt
