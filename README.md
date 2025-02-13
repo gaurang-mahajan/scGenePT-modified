@@ -24,7 +24,7 @@ python -m ipykernel install --user --name=scgenept --display-name "Python (scgen
 Downloading scGPT and scGenePT gene embeddings:
 ```
 aws s3 sync --no-sign-request s3://czi-scgenept-public/models/pretrained/scgpt models/pretrained/scgpt
-aws s3 sync --no-sign-request s3://czi-scgenept-public/models/gene_embeddings/ gene_embeddings/
+aws s3 sync --no-sign-request s3://czi-scgenept-public/models/gene_embeddings/ models/gene_embeddings/
 ```
 
 Download KG gene embeddings:
@@ -33,7 +33,7 @@ os.makedirs("gene_embeddings", exist_ok=True)
 
 url = "https://drive.google.com/file/d/15_UTN12KGMNPrKjKfVOWezdtsYsfCMrS/view?usp=sharing"  # KG with genome loc
 # url = "https://drive.google.com/file/d/1Yc74u843HTeLQJRSLjgKQAMN58DjXSMH/view?usp=sharing"  # KG excluding genome loc
-output = "gene_embeddings/node2vec_gene_embeddings.pickle"
+output = "models/gene_embeddings/node2vec_gene_embeddings.pickle"
 
 gdown.download(url, output, fuzzy=True)
 ```
