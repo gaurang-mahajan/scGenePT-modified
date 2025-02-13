@@ -38,7 +38,7 @@ output = "models/gene_embeddings/node2vec_gene_embeddings.pickle"
 gdown.download(url, output, fuzzy=True)
 ```
 
-Run train.py script (batch size to be reduced if CUDA memory problems faced):
+Run ```train.py``` script (batch size to be reduced if CUDA memory problems faced):
 ```
 python train.py --model-type=scgpt --num-epochs=20 --dataset=norman --device=cuda:0 --batch-size=16 --eval-batch-size=16
 ```
