@@ -14,10 +14,6 @@ cd scGenePT/
 ```
 ```
 pip install -r requirements.txt
-#pip install setuptools
-#pip install flash-attn --no-build-isolation
-#pip install scgpt #"flash-attn<1.0.5"
-#pip install awscli
 ```
 
 **To have same env in jupyter kernel:**
@@ -40,6 +36,11 @@ url = "https://drive.google.com/file/d/15_UTN12KGMNPrKjKfVOWezdtsYsfCMrS/view?us
 output = "gene_embeddings/node2vec_gene_embeddings.pickle"
 
 gdown.download(url, output, fuzzy=True)
+```
+
+Run train.py script (batch size to be reduced if CUDA memory problems faced):
+```
+python train.py --model-type=scgpt --num-epochs=20 --dataset=norman --device=cuda:0 --batch-size=16 --eval-batch-size=16
 ```
 
 ## :file_folder: Data
