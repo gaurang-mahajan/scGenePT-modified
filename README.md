@@ -35,7 +35,10 @@ gdown.download(url, output, fuzzy=True)
 
 Run ```train.py``` script (batch size to be reduced if CUDA memory problems faced):
 ```
+# Vanilla scGPT
 python train.py --model-type=scgpt --num-epochs=20 --dataset=norman --device=cuda:0 --batch-size=16 --eval-batch-size=16
+# scGenePT + GO-all-concat
+python train.py --model-type=scgenept_go_all_gpt_concat --num-epochs=20 --dataset=norman --device=cuda:0 --batch-size=16 --eval-batch-size=16
 ```
 
 # scGenePT: Is language all you need for modeling single-cell perturbations?
