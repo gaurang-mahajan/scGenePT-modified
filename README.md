@@ -22,15 +22,12 @@ aws s3 sync --no-sign-request s3://czi-scgenept-public/models/pretrained/scgpt m
 aws s3 sync --no-sign-request s3://czi-scgenept-public/models/gene_embeddings/ models/gene_embeddings/
 ```
 
-Download KG gene embeddings:
+Download KG gene embeddings (using gdown installed from requirements.txt):
 ```
-os.makedirs("gene_embeddings", exist_ok=True)
-
-url = "https://drive.google.com/file/d/15_UTN12KGMNPrKjKfVOWezdtsYsfCMrS/view?usp=sharing"  # KG with genome loc
-# url = "https://drive.google.com/file/d/1Yc74u843HTeLQJRSLjgKQAMN58DjXSMH/view?usp=sharing"  # KG excluding genome loc
-output = "models/gene_embeddings/node2vec_gene_embeddings.pickle"
-
-gdown.download(url, output, fuzzy=True)
+# KG with genome loc
+gdown "https://drive.google.com/uc?id=15_UTN12KGMNPrKjKfVOWezdtsYsfCMrS" -O models/gene_embeddings/node2vec_gene_embeddings.pickle
+# KG excluding genome loc
+gdown "https://drive.google.com/uc?id=1Yc74u843HTeLQJRSLjgKQAMN58DjXSMH" -O models/gene_embeddings/node2vec_gene_embeddings.pickle
 ```
 
 Run ```train.py``` (batch size to be reduced if CUDA memory problems faced):
