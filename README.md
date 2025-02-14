@@ -33,12 +33,18 @@ output = "models/gene_embeddings/node2vec_gene_embeddings.pickle"
 gdown.download(url, output, fuzzy=True)
 ```
 
-Run ```train.py``` script (batch size to be reduced if CUDA memory problems faced):
+Run ```train.py``` (batch size to be reduced if CUDA memory problems faced):
 ```
 # Vanilla scGPT
 python train.py --model-type=scgpt --num-epochs=20 --dataset=norman --device=cuda:0 --batch-size=16 --eval-batch-size=16
 # scGenePT + GO-all-concat
 python train.py --model-type=scgenept_go_all_gpt_concat --num-epochs=20 --dataset=norman --device=cuda:0 --batch-size=16 --eval-batch-size=16
+```
+
+To run run_train.sh script with multiple runs:
+```
+chmod +x run_train.sh
+./run_train.sh
 ```
 
 # scGenePT: Is language all you need for modeling single-cell perturbations?
