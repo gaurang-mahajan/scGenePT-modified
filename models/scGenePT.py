@@ -631,10 +631,15 @@ class N2VEncoder(nn.Module):
         super().__init__()
         self.embedding = nn.Embedding.from_pretrained(torch.from_numpy(n2v_lookup_embed), freeze = False, padding_idx=padding_idx)
         self.enc_norm = nn.LayerNorm(n2v_embs_size)
-        if n2v_embs_size != embedding_dim:
-            self.proj_layer = nn.Linear(n2v_embs_size, embedding_dim)
-        else:
+        if proj_layer:
+            print("Using a learned projection layer")
             self.proj_layer = proj_layer
+        else:
+            if n2v_embs_size != embedding_dim:
+                self.proj_layer = nn.Linear(n2v_embs_size, embedding_dim)
+            else:
+                print("Adding an identity projection layer.")
+                self.proj_layer = nn.Identity()
         self.enc_norm = nn.LayerNorm(embedding_dim)
        
     def forward(self, x: Tensor) -> Tensor:
