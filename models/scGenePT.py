@@ -775,7 +775,7 @@ def train_epoch(model, train_loader, loss_fn, optimizer,
     num_batches = len(train_loader)
     
     for batch, batch_data in enumerate(train_loader):
-        batch_data.to(device)
+        batch_data.to(device, non_blocking=True)
         mapped_input_gene_ids, input_values, input_pert_flags, src_key_padding_mask, target_values = get_batch_data(batch_data, include_zero_gene,
                                                                                                                     n_genes, max_seq_len, gene_ids, device)
         
@@ -797,9 +797,12 @@ def train_epoch(model, train_loader, loss_fn, optimizer,
             )  # Use all
             loss = loss_fn(output_values, target_values, masked_positions)
 
-        model.zero_grad()
-        scaler.scale(loss).backward()
+        #model.zero_grad()
+        optimizer.zero_grad(set_to_none=True)
+        
+        scaler.scale(loss).backward(create_graph=False)
         scaler.unscale_(optimizer)
+        
         with warnings.catch_warnings(record=True) as w:
             warnings.filterwarnings("always")
             torch.nn.utils.clip_grad_norm_(
