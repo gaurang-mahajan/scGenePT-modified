@@ -174,6 +174,10 @@ if __name__ == "__main__":
     model_type = args.model_type
     use_fast_transformer = True  # whether to use fast transformer
     amp = True
+
+    # Enable TensorFloat32 (TF32) for efficient matrix multiplications
+    torch.backends.cuda.matmul.allow_tf32 = True
+    torch.backends.cudnn.benchmark = True  # Optimize cuDNN algorithms
     
     # Location of pretrained scGPT model
     scgpt_pretrained_model_location = args.pretrained_model_dir + 'pretrained/scgpt'
