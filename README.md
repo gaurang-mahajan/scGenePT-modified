@@ -1,4 +1,7 @@
 ## Adding KG node2vec option to the scGenePT code for evaluation
+
+[Tested on A100 machine.]
+
 ```
 conda create -y --name scgenept python=3.10 # or python3.10 -m venv scgenept
 source activate scgenept
