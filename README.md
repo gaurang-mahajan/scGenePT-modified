@@ -1,7 +1,7 @@
 ## Adding KG node2vec option to the scGenePT code for evaluation
 
 ```
-conda create -y --name scgenept python=3.10 # or python3.10 -m venv scgenept
+conda create -y --name scgenept python=3.10
 source activate scgenept
 ```
 ```
@@ -17,13 +17,13 @@ pip install -r requirements.txt
 python -m ipykernel install --user --name=scgenept --display-name "Python (scgenept)"
 ```
 
-Downloading scGPT and scGenePT gene embeddings:
+Downloading scGPT pretrained model and scGenePT gene embeddings:
 ```
 aws s3 sync --no-sign-request s3://czi-scgenept-public/models/pretrained/scgpt models/pretrained/scgpt
 aws s3 sync --no-sign-request s3://czi-scgenept-public/models/gene_embeddings/ models/gene_embeddings/
 ```
 
-Download KG gene embeddings (using gdown installed from requirements.txt):
+Download KG gene embeddings (using gdown installed in requirements.txt):
 ```
 # KG with genome loc
 gdown "https://drive.google.com/uc?id=15_UTN12KGMNPrKjKfVOWezdtsYsfCMrS" -O models/gene_embeddings/node2vec_gene_embeddings.pickle
@@ -31,12 +31,12 @@ gdown "https://drive.google.com/uc?id=15_UTN12KGMNPrKjKfVOWezdtsYsfCMrS" -O mode
 gdown "https://drive.google.com/uc?id=1Yc74u843HTeLQJRSLjgKQAMN58DjXSMH" -O models/gene_embeddings/node2vec_gene_embeddings.pickle
 ```
 
-Run ```train.py``` (batch size to be reduced if CUDA memory problems faced):
+Run ```train.py``` (batch size to be reduced if CUDA memory problems faced; had to use batch-size 16 on 1 A100 GPU):
 ```
 # Vanilla scGPT
-python train.py --model-type=scgpt --num-epochs=20 --dataset=norman --device=cuda:0 --batch-size=16 --eval-batch-size=16
+python train.py --model-type=scgpt --num-epochs=20 --dataset=norman --device=cuda:0 --batch-size=64 --eval-batch-size=64
 # scGenePT + GO-all-concat
-python train.py --model-type=scgenept_go_all_gpt_concat --num-epochs=20 --dataset=norman --device=cuda:0 --batch-size=16 --eval-batch-size=16
+python train.py --model-type=scgenept_go_all_gpt_concat --num-epochs=20 --dataset=norman --device=cuda:0 --batch-size=64 --eval-batch-size=64
 ```
 
 To run multiple runs:
